@@ -8,6 +8,7 @@ const INITIAL_VALUES = [
 
 let cases = [];
 let remainingValues = [];
+let isShuffling = false;
 
 function formatMoney(amount) {
   return '$' + amount.toLocaleString('es-ES');
@@ -23,23 +24,43 @@ function shuffle(array) {
 }
 
 function initGame() {
+  if (isShuffling) return;
+
   const allCases = document.querySelectorAll('.case');
   const allBadges = document.querySelectorAll('.value-badge');
 
   if (allCases.length > 0) {
-    allCases.forEach((el, index) => {
+    isShuffling = true;
+
+    // Asignar trayectorias aleatorias a cada maletín
+    allCases.forEach(el => {
+      const randomX = (Math.random() * 80 - 40) + 'px';
+      const randomY = (Math.random() * 80 - 40) + 'px';
+      const randomRot = (Math.random() * 30 - 15) + 'deg';
+
+      el.style.setProperty('--tx', randomX);
+      el.style.setProperty('--ty', randomY);
+      el.style.setProperty('--rot', randomRot);
       el.classList.add('shuffling');
-      el.style.animationDelay = `${(index % 5) * 0.05}s`;
     });
 
-    allBadges.forEach((el, index) => {
+    // Asignar trayectorias aleatorias a las etiquetas de premios
+    allBadges.forEach(el => {
+      const randomX = (Math.random() * 30 - 15) + 'px';
+      const randomY = (Math.random() * 30 - 15) + 'px';
+      const randomRot = (Math.random() * 10 - 5) + 'deg';
+
+      el.style.setProperty('--tx', randomX);
+      el.style.setProperty('--ty', randomY);
+      el.style.setProperty('--rot', randomRot);
       el.classList.add('shuffling');
-      el.style.animationDelay = `${(index % 4) * 0.04}s`;
     });
 
+    // Mantener la animación de mezcla durante 1.2 segundos
     setTimeout(() => {
       executeReset();
-    }, 700);
+      isShuffling = false;
+    }, 1200);
   } else {
     executeReset();
   }
@@ -60,12 +81,6 @@ function executeReset() {
 
   renderBoard();
   updateMetrics();
-
-  const newCases = document.querySelectorAll('.case');
-  const newBadges = document.querySelectorAll('.value-badge');
-
-  newCases.forEach(el => el.classList.add('settling'));
-  newBadges.forEach(el => el.classList.add('settling'));
 }
 
 function renderBoard() {
@@ -108,6 +123,8 @@ function renderBoard() {
 }
 
 function openCase(id) {
+  if (isShuffling) return;
+
   const c = cases.find(item => item.id === id);
   if (c.opened) return;
 

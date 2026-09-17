@@ -119,7 +119,7 @@ h1 {
   font-size: 0.95rem;
   text-align: center;
   letter-spacing: 1px;
-  transition: all 0.4s ease;
+  transition: all 0.5s ease-out;
   position: relative;
   overflow: hidden;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 3px 6px rgba(0,0,0,0.3);
@@ -183,7 +183,7 @@ h1 {
   user-select: none;
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.6);
   border: 1px solid #ffe066;
-  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.5s ease;
 }
 
 .case::before {
@@ -195,7 +195,7 @@ h1 {
   pointer-events: none;
 }
 
-.case:hover:not(.opened) {
+.case:hover:not(.opened):not(.shuffling) {
   transform: translateY(-5px) scale(1.03);
   box-shadow: 0 12px 20px rgba(0, 0, 0, 0.7), 0 0 15px var(--gold-glow);
 }
@@ -286,48 +286,19 @@ h1 {
   background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
 }
 
-/* Animación de barajado para maletines y premios */
+/* Animación de mezcla continua en bucle */
 .shuffling {
-  animation: shuffleAnim 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite alternate;
+  animation: shuffleLoop 0.35s ease-in-out infinite alternate;
+  z-index: 10;
   pointer-events: none;
 }
 
-@keyframes shuffleAnim {
+@keyframes shuffleLoop {
   0% {
-    transform: translate(0, 0) rotate(0deg) scale(1);
-    opacity: 1;
-  }
-  25% {
-    transform: translate(-15px, 10px) rotate(-8deg) scale(0.92);
-    opacity: 0.7;
-  }
-  50% {
-    transform: translate(20px, -15px) rotate(10deg) scale(1.05);
-    opacity: 0.85;
-  }
-  75% {
-    transform: translate(-10px, -10px) rotate(-5deg) scale(0.95);
-    opacity: 0.75;
+    transform: translate(var(--tx, 15px), var(--ty, -20px)) rotate(var(--rot, 12deg)) scale(1.08);
   }
   100% {
-    transform: translate(12px, 15px) rotate(6deg) scale(1.02);
-    opacity: 0.9;
-  }
-}
-
-/* Efecto de asentamiento cuando vuelven a su lugar */
-.settling {
-  animation: settleAnim 0.4s ease-out forwards;
-}
-
-@keyframes settleAnim {
-  0% {
-    transform: scale(0.8);
-    opacity: 0.5;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
+    transform: translate(calc(var(--tx, 15px) * -1), calc(var(--ty, -20px) * -1)) rotate(calc(var(--rot, 12deg) * -1)) scale(0.92);
   }
 }
 
