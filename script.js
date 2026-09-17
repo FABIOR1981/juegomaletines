@@ -39,6 +39,14 @@ let modes = {
   perfil: false
 };
 
+// Modo visual "TV": puramente estético, no cambia ninguna regla del juego.
+// No se bloquea con setModePanelLocked porque no afecta la partida.
+let tvMode = false;
+
+// Guarda el último maletín abierto para dispararle el destello dorado una
+// sola vez, en el próximo renderBoard, si el modo TV está activo.
+let pendingFlash = null; // { id, big }
+
 /* ----------------------------- Estado ----------------------------------- */
 
 const PHASE = {
@@ -71,6 +79,17 @@ const $ = (id) => document.getElementById(id);
 
 function formatMoney(amount) {
   return '$' + Math.round(amount).toLocaleString(CONFIG.locale);
+}
+
+function animateCount(el, from, to, duration) {
+  const start = performance.now();
+  function step(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.innerText = formatMoney(from + (to - from) * eased);
+    if (t < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
 }
 
 function shuffle(array) {
@@ -238,6 +257,7 @@ function openCase(id) {
 
   c.opened = true;
   state.opensLeftInRound--;
+  pendingFlash = tvMode ? { id: c.id, big: c.value >= 100000 } : null;
 
   // Se corta la interacción antes de mostrar la oferta para que no se
   // abran maletines de más durante la pausa.
@@ -257,8 +277,7 @@ function startOfferPhase() {
   const ve = expectedValue();
   const pending = unopenedCases().length - 1; // sin contar el propio
 
-  $('offer-amount').innerText = formatMoney(offer);
-  $('offer-sub').innerText =
+  const subText =
     `Valor esperado del tablero: ${formatMoney(ve)} · ` +
     `La oferta es el ${Math.round((offer / ve) * 100)}% del VE · ` +
     (pending > 0
@@ -267,6 +286,27 @@ function startOfferPhase() {
 
   $('offer-overlay').hidden = false;
   renderStatus();
+
+  if (tvMode) {
+    $('offer-thinking').hidden = false;
+    $('offer-amount').style.visibility = 'hidden';
+    $('offer-sub').style.visibility = 'hidden';
+    $('deal-btn').disabled = true;
+    $('nodeal-btn').disabled = true;
+
+    setTimeout(() => {
+      $('offer-thinking').hidden = true;
+      $('offer-amount').style.visibility = 'visible';
+      $('offer-sub').style.visibility = 'visible';
+      $('offer-sub').innerText = subText;
+      animateCount($('offer-amount'), 0, offer, 700);
+      $('deal-btn').disabled = false;
+      $('nodeal-btn').disabled = false;
+    }, 1100);
+  } else {
+    $('offer-amount').innerText = formatMoney(offer);
+    $('offer-sub').innerText = subText;
+  }
 }
 
 function acceptOffer() {
@@ -387,12 +427,15 @@ function renderBoard() {
   const clickable = (state.phase === PHASE.PICK) ||
                     (state.phase === PHASE.OPEN);
 
+  const flash = pendingFlash;
+
   state.cases.forEach(c => {
     const el = document.createElement('div');
     const classes = ['case'];
     if (c.opened) classes.push('opened');
     if (c.isPlayer) classes.push('player');
     if (state.phase === PHASE.PICK) classes.push('selectable');
+    if (flash && flash.id === c.id) classes.push('just-opened-tv');
     el.className = classes.join(' ');
 
     el.innerHTML = `
@@ -411,6 +454,14 @@ function renderBoard() {
 
     grid.appendChild(el);
   });
+
+  if (flash) {
+    if (flash.big) {
+      grid.classList.add('big-hit-tv');
+      setTimeout(() => grid.classList.remove('big-hit-tv'), 700);
+    }
+    pendingFlash = null;
+  }
 }
 
 function renderMetrics() {
@@ -481,6 +532,8 @@ function renderStatus() {
 
 function setStatus(text) {
   $('status-bar').innerText = text;
+  const ticker = $('tv-ticker-text');
+  if (ticker) ticker.innerText = text;
 }
 
 function renderPlayerBar() {
@@ -565,6 +618,11 @@ function setModePanelLocked(locked) {
 
 function hideAllOverlays() {
   ['offer-overlay', 'swap-overlay', 'result-overlay'].forEach(id => { $(id).hidden = true; });
+  $('offer-thinking').hidden = true;
+  $('offer-amount').style.visibility = 'visible';
+  $('offer-sub').style.visibility = 'visible';
+  $('deal-btn').disabled = false;
+  $('nodeal-btn').disabled = false;
 }
 
 /* ----------------------------- Eventos ----------------------------------- */
@@ -595,6 +653,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   $('toggle-perfil').addEventListener('change', (e) => {
     modes.perfil = e.target.checked;
+  });
+
+  $('toggle-tv').addEventListener('change', (e) => {
+    tvMode = e.target.checked;
+    document.body.classList.toggle('theme-tv', tvMode);
   });
 
   initGame();

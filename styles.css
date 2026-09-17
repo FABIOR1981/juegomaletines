@@ -783,6 +783,191 @@ h1 {
   }
 }
 
+/* ============================================================================
+   MODO TV — puramente estético. Todo vive atrás de body.theme-tv, así que el
+   modo clásico (por defecto) queda pixel a pixel como estaba antes de esto.
+   ============================================================================ */
+
+.tv-ticker,
+.tv-toggle-fab {
+  position: fixed;
+  z-index: 60;
+}
+
+.tv-toggle-fab {
+  top: 14px;
+  right: 14px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  padding: 6px 14px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.tv-toggle-fab .switch-row {
+  gap: 8px;
+}
+
+.tv-toggle-fab .switch-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* Ticker "EN VIVO": solo visible en modo TV */
+.tv-ticker {
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -100%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(90deg, #7f1d1d 0%, #991b1b 50%, #7f1d1d 100%);
+  border: 1px solid #f87171;
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  padding: 5px 18px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+  transition: transform 0.35s ease;
+  max-width: 90vw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tv-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff;
+  flex-shrink: 0;
+  animation: tvDotBlink 1.2s ease-in-out infinite;
+}
+
+@keyframes tvDotBlink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.2; }
+}
+
+.tv-sep {
+  opacity: 0.6;
+}
+
+body.theme-tv .tv-ticker {
+  transform: translate(-50%, 0);
+}
+
+body.theme-tv .page-layout {
+  margin-top: 26px;
+}
+
+/* Focos de escenario + viñeta, animados detrás de todo */
+body.theme-tv {
+  position: relative;
+  overflow-x: hidden;
+}
+
+body.theme-tv::before,
+body.theme-tv::after {
+  content: '';
+  position: fixed;
+  inset: -10%;
+  z-index: -1;
+  pointer-events: none;
+}
+
+body.theme-tv::before {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255, 215, 0, 0.12), transparent 32%),
+    radial-gradient(circle at 85% 15%, rgba(0, 240, 255, 0.1), transparent 32%),
+    radial-gradient(circle at 50% 90%, rgba(255, 215, 0, 0.08), transparent 35%);
+  animation: tvSpotlights 14s ease-in-out infinite alternate;
+}
+
+@keyframes tvSpotlights {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(2%, 3%) scale(1.08); }
+  100% { transform: translate(-2%, -2%) scale(1); }
+}
+
+body.theme-tv::after {
+  background: radial-gradient(ellipse at 50% -10%, transparent 40%, rgba(3, 7, 18, 0.85) 85%);
+}
+
+/* Botones de decisión con brillo pulsante */
+body.theme-tv .btn-deal,
+body.theme-tv .btn-nodeal {
+  animation: tvBtnPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes tvBtnPulse {
+  0%, 100% { box-shadow: 0 4px 15px rgba(255, 215, 0, 0.15); }
+  50%      { box-shadow: 0 4px 26px rgba(255, 215, 0, 0.55); }
+}
+
+/* Suspenso "la banca está pensando" */
+.thinking {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1rem;
+  color: var(--gold);
+  letter-spacing: 1px;
+  margin-bottom: 14px;
+}
+
+.thinking .dots span {
+  animation: thinkingDot 1.2s infinite;
+  opacity: 0;
+}
+
+.thinking .dots span:nth-child(2) { animation-delay: 0.2s; }
+.thinking .dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes thinkingDot {
+  0%, 20%  { opacity: 0; }
+  40%      { opacity: 1; }
+  100%     { opacity: 0; }
+}
+
+/* Destello al abrir un maletín (solo modo TV) */
+@keyframes tvCaseFlash {
+  0%   { box-shadow: 0 6px 12px rgba(0, 0, 0, 0.6), 0 0 0 rgba(255, 215, 0, 0); }
+  35%  { box-shadow: 0 6px 12px rgba(0, 0, 0, 0.6), 0 0 40px 8px rgba(255, 215, 0, 0.8); }
+  100% { box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.8), 0 0 0 rgba(255, 215, 0, 0); }
+}
+
+.case.just-opened-tv {
+  animation: tvCaseFlash 0.7s ease-out;
+}
+
+/* Pulso de pantalla para premios altos ($100.000+) */
+@keyframes tvBigHit {
+  0%, 100% { box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.5); }
+  40%      { box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.5), 0 0 60px 10px rgba(255, 215, 0, 0.5); }
+}
+
+.cases-grid.big-hit-tv {
+  animation: tvBigHit 0.7s ease-out;
+}
+
+@media (max-width: 900px) {
+  .tv-toggle-fab {
+    top: 8px;
+    right: 8px;
+    padding: 5px 10px;
+  }
+  .tv-ticker {
+    font-size: 0.62rem;
+    padding: 4px 12px;
+  }
+}
+
 @media (max-width: 900px) {
   .main-container {
     grid-template-columns: 1fr;
