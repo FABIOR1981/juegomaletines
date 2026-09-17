@@ -15,6 +15,10 @@
 
   <div class="dashboard">
     <div class="metric-card">
+      <h3>Ronda</h3>
+      <div class="value" id="round-label">-</div>
+    </div>
+    <div class="metric-card">
       <h3>Maletines Restantes</h3>
       <div class="value" id="remaining-count">0</div>
     </div>
@@ -28,10 +32,56 @@
     </div>
   </div>
 
+  <div class="status-bar" id="status-bar">Elegí tu maletín</div>
+
+  <div class="player-case-bar" id="player-case-bar" hidden>
+    <span class="label">Tu maletín</span>
+    <span class="num" id="player-case-num">-</span>
+    <span class="hint" id="player-case-hint">queda cerrado hasta el final</span>
+  </div>
+
   <div class="main-container">
     <div class="values-column" id="low-values-list"></div>
     <div class="cases-grid" id="cases-grid"></div>
     <div class="values-column" id="high-values-list"></div>
+  </div>
+
+  <!-- Panel de oferta de la banca -->
+  <div class="overlay" id="offer-overlay" hidden>
+    <div class="panel">
+      <h2>La banca te ofrece</h2>
+      <div class="big-amount" id="offer-amount">$0</div>
+      <p class="panel-sub" id="offer-sub"></p>
+      <div class="panel-actions">
+        <button class="btn btn-deal" id="deal-btn">Trato</button>
+        <button class="btn btn-nodeal" id="nodeal-btn">No Trato</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel de cambio final -->
+  <div class="overlay" id="swap-overlay" hidden>
+    <div class="panel">
+      <h2>Última decisión</h2>
+      <p class="panel-sub" id="swap-sub"></p>
+      <div class="panel-actions">
+        <button class="btn btn-keep" id="keep-btn">Me quedo con el mío</button>
+        <button class="btn btn-swap" id="swap-btn">Cambiar maletín</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resultado final -->
+  <div class="overlay" id="result-overlay" hidden>
+    <div class="panel wide">
+      <h2 id="result-title">Fin de la partida</h2>
+      <div class="big-amount" id="result-amount">$0</div>
+      <p class="panel-sub" id="result-sub"></p>
+      <div class="result-history" id="result-history"></div>
+      <div class="panel-actions">
+        <button class="btn btn-deal" id="play-again-btn">Jugar de nuevo</button>
+      </div>
+    </div>
   </div>
 
   <div class="controls">
