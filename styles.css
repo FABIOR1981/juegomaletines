@@ -529,7 +529,7 @@ h1 {
   }
 }
 
-/* Pantallas bajas: compacta todavía más para que entre sin hacer zoom out */
+/* Pantallas   bajas: compacta todavía más para que entre sin hacer zoom out */
 @media (max-height: 800px) {
   h1 { font-size: 1.25rem; margin-bottom: 6px; }
   .metric-card { padding: 6px 10px; }

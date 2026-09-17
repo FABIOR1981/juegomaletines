@@ -3,7 +3,7 @@
    Fases: mezcla -> elegir maletín propio -> rondas de apertura + oferta
           (Trato / No Trato) -> cambio final -> revelación
    Toda la parametrización vive en CONFIG: es el punto de enganche para los
-   modos de juego que se agreguen más adelante.
+   modos de juego que se agreguen más adelante  .
    ========================================================================== */
 
 const CONFIG = {
