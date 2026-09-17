@@ -22,7 +22,7 @@ body {
   background: var(--bg-gradient);
   color: var(--text-main);
   min-height: 100vh;
-  padding: 20px;
+  padding: 12px 14px 18px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -31,7 +31,7 @@ body {
 
 h1 {
   font-family: 'Orbitron', sans-serif;
-  font-size: 2.2rem;
+  font-size: clamp(1.3rem, 2.4vw, 1.8rem);
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -41,24 +41,24 @@ h1 {
   -webkit-text-fill-color: transparent;
   color: transparent;
   text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   text-align: center;
 }
 
 .dashboard {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  gap: 10px;
   width: 100%;
-  max-width: 1300px;
-  margin-bottom: 18px;
+  max-width: 1400px;
+  margin-bottom: 10px;
 }
 
 .metric-card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: 12px;
-  padding: 16px 20px;
+  border-radius: 10px;
+  padding: 9px 14px;
   text-align: center;
   backdrop-filter: blur(10px);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
@@ -77,16 +77,16 @@ h1 {
 
 .metric-card h3 {
   font-family: 'Orbitron', sans-serif;
-  font-size: 0.85rem;
+  font-size: 0.7rem;
   color: #94a3b8;
   letter-spacing: 1px;
-  margin-bottom: 6px;
+  margin-bottom: 2px;
   text-transform: uppercase;
 }
 
 .metric-card .value {
   font-family: 'Orbitron', sans-serif;
-  font-size: 1.8rem;
+  font-size: clamp(1rem, 1.55vw, 1.35rem);
   font-weight: 700;
   color: var(--cyan);
   text-shadow: 0 0 10px var(--cyan-glow);
@@ -101,15 +101,15 @@ h1 {
 
 .status-bar {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 600;
   letter-spacing: 0.5px;
   color: #cbd5e1;
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 999px;
-  padding: 8px 22px;
-  margin-bottom: 14px;
+  padding: 5px 18px;
+  margin-bottom: 8px;
   text-align: center;
 }
 
@@ -120,8 +120,8 @@ h1 {
   background: rgba(16, 185, 129, 0.1);
   border: 1px solid rgba(16, 185, 129, 0.45);
   border-radius: 10px;
-  padding: 8px 18px;
-  margin-bottom: 18px;
+  padding: 5px 14px;
+  margin-bottom: 10px;
 }
 
 .player-case-bar .label {
@@ -134,37 +134,37 @@ h1 {
 
 .player-case-bar .num {
   font-family: 'Orbitron', sans-serif;
-  font-size: 1.15rem;
+  font-size: 1rem;
   font-weight: 900;
   color: var(--green);
   text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
 }
 
 .player-case-bar .hint {
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   color: #94a3b8;
 }
 
 .main-container {
   display: grid;
-  grid-template-columns: 220px 1fr 220px;
-  gap: 24px;
+  grid-template-columns: 165px 1fr 165px;
+  gap: 14px;
   width: 100%;
-  max-width: 1300px;
+  max-width: 1400px;
 }
 
 .values-column {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 4px;
 }
 
 .value-badge {
   font-family: 'Orbitron', sans-serif;
-  padding: 9px 12px;
-  border-radius: 8px;
+  padding: 5px 8px;
+  border-radius: 6px;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   text-align: center;
   letter-spacing: 1px;
   transition: all 0.5s ease-out;
@@ -207,13 +207,13 @@ h1 {
 
 .cases-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 9px;
   align-content: start;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: 14px;
+  padding: 12px;
   backdrop-filter: blur(10px);
   box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.5);
 }
@@ -259,9 +259,9 @@ h1 {
 
 .case .handle {
   position: absolute;
-  top: -6px;
-  width: 36px;
-  height: 8px;
+  top: -5px;
+  width: 28px;
+  height: 6px;
   background: linear-gradient(90deg, #444, #ccc, #444);
   border-radius: 3px 3px 0 0;
   border: 1px solid #111;
@@ -269,7 +269,7 @@ h1 {
 
 .case .num {
   font-family: 'Orbitron', sans-serif;
-  font-size: 1.4rem;
+  font-size: 1.05rem;
   font-weight: 900;
   color: #1a1202;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
@@ -289,7 +289,7 @@ h1 {
 
 .case .mine-tag {
   position: absolute;
-  bottom: 6px;
+  bottom: 4px;
   font-family: 'Orbitron', sans-serif;
   font-size: 0.6rem;
   font-weight: 900;
@@ -486,15 +486,15 @@ h1 {
 .hist-dec.nodeal { color: var(--red-val); font-weight: 700; }
 
 .controls {
-  margin-top: 30px;
+  margin-top: 16px;
   display: flex;
   gap: 15px;
 }
 
 .reset-btn {
   font-family: 'Orbitron', sans-serif;
-  padding: 12px 30px;
-  font-size: 0.95rem;
+  padding: 9px 24px;
+  font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -527,6 +527,22 @@ h1 {
   100% {
     transform: translate(calc(var(--tx, 15px) * -1), calc(var(--ty, -20px) * -1)) rotate(calc(var(--rot, 12deg) * -1)) scale(0.92);
   }
+}
+
+/* Pantallas bajas: compacta todavía más para que entre sin hacer zoom out */
+@media (max-height: 800px) {
+  h1 { font-size: 1.25rem; margin-bottom: 6px; }
+  .metric-card { padding: 6px 10px; }
+  .metric-card h3 { font-size: 0.62rem; }
+  .metric-card .value { font-size: 1.05rem; }
+  .dashboard { gap: 8px; margin-bottom: 7px; }
+  .status-bar { font-size: 0.85rem; padding: 4px 14px; margin-bottom: 6px; }
+  .player-case-bar { padding: 4px 12px; margin-bottom: 7px; }
+  .cases-grid { grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 7px; padding: 10px; }
+  .case .num { font-size: 0.9rem; }
+  .value-badge { font-size: 0.72rem; padding: 4px 6px; }
+  .main-container { grid-template-columns: 140px 1fr 140px; gap: 10px; }
+  .controls { margin-top: 10px; }
 }
 
 @media (max-width: 900px) {
