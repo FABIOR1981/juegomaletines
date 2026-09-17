@@ -23,6 +23,29 @@ function shuffle(array) {
 }
 
 function initGame() {
+  const allCases = document.querySelectorAll('.case');
+  const allBadges = document.querySelectorAll('.value-badge');
+
+  if (allCases.length > 0) {
+    allCases.forEach((el, index) => {
+      el.classList.add('shuffling');
+      el.style.animationDelay = `${(index % 5) * 0.05}s`;
+    });
+
+    allBadges.forEach((el, index) => {
+      el.classList.add('shuffling');
+      el.style.animationDelay = `${(index % 4) * 0.04}s`;
+    });
+
+    setTimeout(() => {
+      executeReset();
+    }, 700);
+  } else {
+    executeReset();
+  }
+}
+
+function executeReset() {
   const shuffledValues = shuffle(INITIAL_VALUES);
   remainingValues = [...INITIAL_VALUES];
   cases = [];
@@ -37,6 +60,12 @@ function initGame() {
 
   renderBoard();
   updateMetrics();
+
+  const newCases = document.querySelectorAll('.case');
+  const newBadges = document.querySelectorAll('.value-badge');
+
+  newCases.forEach(el => el.classList.add('settling'));
+  newBadges.forEach(el => el.classList.add('settling'));
 }
 
 function renderBoard() {
