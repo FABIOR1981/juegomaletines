@@ -1,5 +1,8 @@
 const INITIAL_VALUES = [
+  // Columna Izquierda (Valores Bajos / Medios)
   1, 2, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500, 750,
+  
+  // Columna Derecha (Valores Altos / Mayores)
   1000, 2500, 5000, 10000, 20000, 30000, 40000, 50000, 75000, 100000, 250000, 500000, 1000000
 ];
 
@@ -24,7 +27,7 @@ function initGame() {
   remainingValues = [...INITIAL_VALUES];
   cases = [];
 
-  for (let i = 0; i < 26; i++) {
+  for (let i = 0; i < INITIAL_VALUES.length; i++) {
     cases.push({
       id: i + 1,
       value: shuffledValues[i],
@@ -42,14 +45,16 @@ function renderBoard() {
   lowList.innerHTML = '';
   highList.innerHTML = '';
 
-  INITIAL_VALUES.slice(0, 13).forEach(val => {
+  const half = Math.ceil(INITIAL_VALUES.length / 2);
+
+  INITIAL_VALUES.slice(0, half).forEach(val => {
     const badge = document.createElement('div');
     badge.className = `value-badge low ${!remainingValues.includes(val) ? 'eliminated' : ''}`;
     badge.innerText = formatMoney(val);
     lowList.appendChild(badge);
   });
 
-  INITIAL_VALUES.slice(13).forEach(val => {
+  INITIAL_VALUES.slice(half).forEach(val => {
     const badge = document.createElement('div');
     badge.className = `value-badge high ${!remainingValues.includes(val) ? 'eliminated' : ''}`;
     badge.innerText = formatMoney(val);
@@ -89,6 +94,7 @@ function openCase(id) {
 
 function updateMetrics() {
   const count = remainingValues.length;
+  const totalCases = INITIAL_VALUES.length;
   document.getElementById('remaining-count').innerText = count;
 
   if (count === 0) {
@@ -100,7 +106,7 @@ function updateMetrics() {
   const sum = remainingValues.reduce((a, b) => a + b, 0);
   const ve = sum / count;
 
-  const factorOferta = 0.60 + ((26 - count) / 25) * 0.25; 
+  const factorOferta = 0.60 + ((totalCases - count) / (totalCases - 1 || 1)) * 0.25; 
   const oferta = ve * factorOferta;
 
   document.getElementById('ve-val').innerText = formatMoney(Math.round(ve));
