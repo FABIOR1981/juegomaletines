@@ -3,7 +3,7 @@
    Fases: mezcla -> elegir maletín propio -> rondas de apertura + oferta
           (Trato / No Trato) -> cambio final -> revelación
    Toda la parametrización vive en CONFIG: es el punto de enganche para los
-   modos de juego que se agreguen más adelante  .
+   modos de juego que se agreguen más adelante.
    ========================================================================== */
 
 const CONFIG = {
@@ -18,12 +18,25 @@ const CONFIG = {
   // values.length - 2 (queda el propio + uno para el cambio final).
   roundPlan: [6, 5, 4, 3, 2, 1, 1, 1, 1],
 
-  // Factor de la oferta de la banca: arranca tacaña y se acerca al VE.
-  offerStart: 0.60,
-  offerEnd: 0.90,
-
   allowFinalSwap: true,
   locale: 'es-ES'
+};
+
+// Presets de la banca: cada modo define el rango del factor de oferta
+// (arranca tacaño y sube hacia el VE a medida que avanza la partida).
+const BANK_PRESETS = {
+  normal:   { label: 'Normal',   start: 0.60, end: 0.90 },
+  tacana:   { label: 'Tacaña',   start: 0.42, end: 0.72 },
+  generosa: { label: 'Generosa', start: 0.72, end: 0.97 }
+};
+
+// Estado de los modos elegidos en el panel superior. Se puede tocar mientras
+// no arrancó la partida (fase PICK antes de elegir maletín); se bloquea
+// apenas se elige el maletín propio.
+let modes = {
+  bank: 'normal',
+  educativo: false,
+  perfil: false
 };
 
 /* ----------------------------- Estado ----------------------------------- */
@@ -91,8 +104,60 @@ function bankOffer() {
   const total = CONFIG.values.length;
   const openedCount = total - remainingValues().length;
   const progress = openedCount / (total - 2 || 1);   // 0 al inicio, ~1 al final
-  const factor = CONFIG.offerStart + Math.min(progress, 1) * (CONFIG.offerEnd - CONFIG.offerStart);
+  const preset = BANK_PRESETS[modes.bank] || BANK_PRESETS.normal;
+  const factor = preset.start + Math.min(progress, 1) * (preset.end - preset.start);
   return expectedValue() * factor;
+}
+
+/* --------------------- Estadísticas modo educativo ----------------------- */
+
+function stdDeviation() {
+  const vals = remainingValues();
+  if (!vals.length) return 0;
+  const mean = expectedValue();
+  const variance = vals.reduce((acc, v) => acc + (v - mean) ** 2, 0) / vals.length;
+  return Math.sqrt(variance);
+}
+
+function median() {
+  const vals = [...remainingValues()].sort((a, b) => a - b);
+  if (!vals.length) return 0;
+  const mid = Math.floor(vals.length / 2);
+  return vals.length % 2 ? vals[mid] : (vals[mid - 1] + vals[mid]) / 2;
+}
+
+/* ------------------------ Perfil de riesgo -------------------------------- */
+
+function computeRiskProfile() {
+  const r = state.result;
+
+  if (r.type !== 'deal') {
+    return {
+      tag: 'Buscador de riesgo',
+      detail: 'Jugaste hasta el final sin aceptar ninguna oferta de la banca.'
+    };
+  }
+
+  const last = state.history[state.history.length - 1];
+  const ratio = last && last.ve ? last.offer / last.ve : 0;
+  const pct = Math.round(ratio * 100);
+
+  if (ratio < 0.68) {
+    return {
+      tag: 'Conservador',
+      detail: `Aceptaste apenas la oferta llegó al ${pct}% del valor esperado: preferiste la certeza antes que arriesgar.`
+    };
+  }
+  if (ratio < 0.85) {
+    return {
+      tag: 'Equilibrado',
+      detail: `Aceptaste con una oferta del ${pct}% del valor esperado: ni te apuraste ni forzaste el límite.`
+    };
+  }
+  return {
+    tag: 'Buscador de riesgo',
+    detail: `Esperaste hasta que la oferta llegó al ${pct}% del valor esperado antes de aceptar.`
+  };
 }
 
 function playerCase() {
@@ -149,6 +214,7 @@ function executeReset() {
     isPlayer: false
   }));
 
+  setModePanelLocked(false);
   renderAll();
 }
 
@@ -162,6 +228,7 @@ function pickPlayerCase(id) {
   state.roundIndex = 0;
   state.opensLeftInRound = CONFIG.roundPlan[0];
 
+  setModePanelLocked(true);
   renderAll();
 }
 
@@ -363,6 +430,28 @@ function renderMetrics() {
 
   $('ve-val').innerText = formatMoney(expectedValue());
   $('bank-offer').innerText = state.phase === PHASE.PICK ? '—' : formatMoney(bankOffer());
+
+  renderEduRow();
+}
+
+function renderEduRow() {
+  const row = $('edu-row');
+  row.hidden = !modes.educativo;
+  if (!modes.educativo) return;
+
+  const vals = remainingValues();
+  if (!vals.length) {
+    $('edu-std').innerText = '$0';
+    $('edu-median').innerText = '$0';
+    $('edu-min').innerText = '$0';
+    $('edu-max').innerText = '$0';
+    return;
+  }
+
+  $('edu-std').innerText = formatMoney(stdDeviation());
+  $('edu-median').innerText = formatMoney(median());
+  $('edu-min').innerText = formatMoney(Math.min(...vals));
+  $('edu-max').innerText = formatMoney(Math.max(...vals));
 }
 
 function renderStatus() {
@@ -439,6 +528,16 @@ function renderResult() {
   $('result-amount').innerText = formatMoney(r.amount);
   $('result-sub').innerText = sub;
 
+  const riskBlock = $('risk-profile');
+  if (modes.perfil) {
+    const profile = computeRiskProfile();
+    $('risk-tag').innerText = profile.tag;
+    $('risk-detail').innerText = profile.detail;
+    riskBlock.hidden = false;
+  } else {
+    riskBlock.hidden = true;
+  }
+
   const hist = $('result-history');
   if (!state.history.length) {
     hist.innerHTML = '';
@@ -456,6 +555,14 @@ function renderResult() {
       </div>`).join('');
 }
 
+function setModePanelLocked(locked) {
+  const panel = $('mode-panel');
+  panel.classList.toggle('locked', locked);
+
+  panel.querySelectorAll('.seg-btn').forEach(btn => { btn.disabled = locked; });
+  panel.querySelectorAll('input[type="checkbox"]').forEach(input => { input.disabled = locked; });
+}
+
 function hideAllOverlays() {
   ['offer-overlay', 'swap-overlay', 'result-overlay'].forEach(id => { $(id).hidden = true; });
 }
@@ -469,5 +576,26 @@ document.addEventListener('DOMContentLoaded', () => {
   $('nodeal-btn').addEventListener('click', rejectOffer);
   $('keep-btn').addEventListener('click', () => resolveFinal(false));
   $('swap-btn').addEventListener('click', () => resolveFinal(true));
+
+  // Selector de banca (3 posiciones)
+  document.querySelectorAll('#bank-segmented .seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.disabled) return;
+      modes.bank = btn.dataset.value;
+      document.querySelectorAll('#bank-segmented .seg-btn')
+        .forEach(b => b.classList.toggle('active', b === btn));
+      renderMetrics();
+    });
+  });
+
+  // Switches de modo educativo y perfil de riesgo
+  $('toggle-educativo').addEventListener('change', (e) => {
+    modes.educativo = e.target.checked;
+    renderEduRow();
+  });
+  $('toggle-perfil').addEventListener('change', (e) => {
+    modes.perfil = e.target.checked;
+  });
+
   initGame();
 });

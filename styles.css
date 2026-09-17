@@ -45,6 +45,205 @@ h1 {
   text-align: center;
 }
 
+/* ------------------------------ Panel de modos ---------------------------- */
+
+.mode-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 22px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 12px 22px;
+  margin-bottom: 18px;
+  backdrop-filter: blur(10px);
+  transition: opacity 0.25s ease;
+}
+
+.mode-panel.locked {
+  opacity: 0.55;
+}
+
+.mode-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mode-group-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.segmented {
+  display: flex;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.seg-btn {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.seg-btn:not(:disabled):hover {
+  color: #e2e8f0;
+}
+
+.seg-btn.active {
+  background: linear-gradient(135deg, var(--gold) 0%, #b45309 100%);
+  color: #1a1202;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.35);
+}
+
+.seg-btn:disabled {
+  cursor: default;
+}
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.switch-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 42px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch .slider {
+  position: absolute;
+  inset: 0;
+  background: rgba(148, 163, 184, 0.3);
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 999px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.switch .slider::before {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 2px;
+  top: 2px;
+  background: #f8fafc;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.switch input:checked + .slider {
+  background: linear-gradient(135deg, var(--green) 0%, #047857 100%);
+  border-color: #34d399;
+}
+
+.switch input:checked + .slider::before {
+  transform: translateX(18px);
+}
+
+/* --------------------------- Fila modo educativo -------------------------- */
+
+.edu-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  width: 100%;
+  max-width: 1300px;
+  margin-bottom: 14px;
+}
+
+.edu-metric {
+  background: rgba(0, 240, 255, 0.06);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: 10px;
+  padding: 8px 14px;
+  text-align: center;
+}
+
+.edu-metric span {
+  display: block;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin-bottom: 3px;
+}
+
+.edu-metric strong {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.05rem;
+  color: var(--cyan);
+  text-shadow: 0 0 8px var(--cyan-glow);
+}
+
+/* --------------------------- Perfil de riesgo ------------------------------ */
+
+.risk-profile {
+  background: rgba(255, 215, 0, 0.06);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.risk-tag {
+  display: inline-block;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #1a1202;
+  background: var(--gold);
+  padding: 4px 10px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+
+.risk-profile p {
+  font-size: 0.9rem;
+  color: #cbd5e1;
+  line-height: 1.4;
+}
+
 .dashboard {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -539,5 +738,16 @@ h1 {
   .values-column {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  }
+  .mode-panel {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .mode-group {
+    justify-content: space-between;
+  }
+  .edu-row {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
