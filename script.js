@@ -8,7 +8,7 @@ const INITIAL_VALUES = [
 
 let cases = [];
 let remainingValues = [];
-let isAnimating = false;
+let isShuffling = false;
 
 function formatMoney(amount) {
   return '$' + amount.toLocaleString('es-ES');
@@ -24,65 +24,43 @@ function shuffle(array) {
 }
 
 function initGame() {
-  if (isAnimating) return;
+  if (isShuffling) return;
 
   const allCases = document.querySelectorAll('.case');
   const allBadges = document.querySelectorAll('.value-badge');
 
   if (allCases.length > 0) {
-    isAnimating = true;
+    isShuffling = true;
 
-    const winWidth = window.innerWidth;
-    const winHeight = window.innerHeight;
+    // Asignar trayectorias aleatorias a cada maletín
+    allCases.forEach(el => {
+      const randomX = (Math.random() * 80 - 40) + 'px';
+      const randomY = (Math.random() * 80 - 40) + 'px';
+      const randomRot = (Math.random() * 30 - 15) + 'deg';
 
-    const applyFly = (elements) => {
-      elements.forEach(el => {
-        const rect = el.getBoundingClientRect();
-        const flyX = (Math.random() * winWidth - rect.left - rect.width / 2) * 0.8 + 'px';
-        const flyY = (Math.random() * winHeight - rect.top - rect.height / 2) * 0.8 + 'px';
-        const flyZ = (Math.random() * 400 - 150) + 'px';
-        const rotX = (Math.random() * 360 - 180) + 'deg';
-        const rotY = (Math.random() * 360 - 180) + 'deg';
-        const rotZ = (Math.random() * 360 - 180) + 'deg';
-        const scale = (Math.random() * 0.8 + 0.6);
+      el.style.setProperty('--tx', randomX);
+      el.style.setProperty('--ty', randomY);
+      el.style.setProperty('--rot', randomRot);
+      el.classList.add('shuffling');
+    });
 
-        el.style.setProperty('--fx', flyX);
-        el.style.setProperty('--fy', flyY);
-        el.style.setProperty('--fz', flyZ);
-        el.style.setProperty('--rx', rotX);
-        el.style.setProperty('--ry', rotY);
-        el.style.setProperty('--rz', rotZ);
-        el.style.setProperty('--sc', scale);
-        el.classList.add('flying');
-      });
-    };
+    // Asignar trayectorias aleatorias a las etiquetas de premios
+    allBadges.forEach(el => {
+      const randomX = (Math.random() * 30 - 15) + 'px';
+      const randomY = (Math.random() * 30 - 15) + 'px';
+      const randomRot = (Math.random() * 10 - 5) + 'deg';
 
-    applyFly(allCases);
-    applyFly(allBadges);
+      el.style.setProperty('--tx', randomX);
+      el.style.setProperty('--ty', randomY);
+      el.style.setProperty('--rot', randomRot);
+      el.classList.add('shuffling');
+    });
 
-    // Fase 1: Vuelo caótico (1.5s)
+    // Mantener la animación de mezcla durante 1.2 segundos
     setTimeout(() => {
       executeReset();
-
-      // Fase 2: Regreso aterricante a su posición inicial
-      const newCases = document.querySelectorAll('.case');
-      const newBadges = document.querySelectorAll('.value-badge');
-
-      const applyReturn = (elements) => {
-        elements.forEach(el => {
-          el.style.transform = 'translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1)';
-        });
-      };
-
-      applyReturn(newCases);
-      applyReturn(newBadges);
-
-      setTimeout(() => {
-        isAnimating = false;
-      }, 700);
-
-    }, 1500);
-
+      isShuffling = false;
+    }, 1200);
   } else {
     executeReset();
   }
@@ -145,7 +123,7 @@ function renderBoard() {
 }
 
 function openCase(id) {
-  if (isAnimating) return;
+  if (isShuffling) return;
 
   const c = cases.find(item => item.id === id);
   if (c.opened) return;

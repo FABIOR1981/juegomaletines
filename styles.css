@@ -27,8 +27,6 @@ body {
   flex-direction: column;
   align-items: center;
   background-attachment: fixed;
-  perspective: 1000px;
-  overflow-x: hidden;
 }
 
 h1 {
@@ -121,7 +119,7 @@ h1 {
   font-size: 0.95rem;
   text-align: center;
   letter-spacing: 1px;
-  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s;
+  transition: all 0.5s ease-out;
   position: relative;
   overflow: hidden;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 3px 6px rgba(0,0,0,0.3);
@@ -185,7 +183,7 @@ h1 {
   user-select: none;
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.6);
   border: 1px solid #ffe066;
-  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s;
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.5s ease;
 }
 
 .case::before {
@@ -197,7 +195,7 @@ h1 {
   pointer-events: none;
 }
 
-.case:hover:not(.opened):not(.flying) {
+.case:hover:not(.opened):not(.shuffling) {
   transform: translateY(-5px) scale(1.03);
   box-shadow: 0 12px 20px rgba(0, 0, 0, 0.7), 0 0 15px var(--gold-glow);
 }
@@ -288,19 +286,19 @@ h1 {
   background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
 }
 
-/* Estado de vuelo caótico */
-.flying {
-  z-index: 999 !important;
+/* Animación de mezcla continua en bucle */
+.shuffling {
+  animation: shuffleLoop 0.35s ease-in-out infinite alternate;
+  z-index: 10;
   pointer-events: none;
-  animation: flyRandom 0.6s ease-in-out infinite alternate;
 }
 
-@keyframes flyRandom {
+@keyframes shuffleLoop {
   0% {
-    transform: translate3d(var(--fx), var(--fy), var(--fz)) rotateX(var(--rx)) rotateY(var(--ry)) rotateZ(var(--rz)) scale(var(--sc));
+    transform: translate(var(--tx, 15px), var(--ty, -20px)) rotate(var(--rot, 12deg)) scale(1.08);
   }
   100% {
-    transform: translate3d(calc(var(--fx) + 30px), calc(var(--fy) - 30px), calc(var(--fz) + 100px)) rotateX(calc(var(--rx) + 45deg)) rotateY(calc(var(--ry) - 45deg)) rotateZ(calc(var(--rz) + 30deg)) scale(calc(var(--sc) * 1.15));
+    transform: translate(calc(var(--tx, 15px) * -1), calc(var(--ty, -20px) * -1)) rotate(calc(var(--rot, 12deg) * -1)) scale(0.92);
   }
 }
 
