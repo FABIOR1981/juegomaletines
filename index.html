@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador de Maletines</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-gradient: radial-gradient(circle at center, #1b2838 0%, #0b101d 100%);
+      --card-bg: rgba(20, 30, 48, 0.75);
+      --card-border: rgba(255, 215, 0, 0.25);
+      --gold: #ffd700;
+      --cyan: #00f0ff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background: var(--bg-gradient);
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background-attachment: fixed;
+    }
+    h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2.1rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      background: linear-gradient(180deg, #ffffff 30%, #ffd700 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    p.subtitle {
+      color: #94a3b8;
+      max-width: 560px;
+      text-align: center;
+      margin-bottom: 34px;
+      font-size: 1rem;
+    }
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      width: 100%;
+      max-width: 720px;
+    }
+    .menu-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 28px 24px;
+      text-decoration: none;
+      color: #f8fafc;
+      backdrop-filter: blur(10px);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      display: block;
+    }
+    .menu-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 14px 34px rgba(255, 215, 0, 0.15);
+    }
+    .menu-card .icon {
+      font-size: 2.2rem;
+      margin-bottom: 12px;
+      display: block;
+    }
+    .menu-card h2 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.05rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+      color: var(--gold);
+    }
+    .menu-card p {
+      color: #94a3b8;
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+    .menu-card.dynamics h2 { color: var(--cyan); }
+  </style>
+</head>
+<body>
+
+  <h1>Simulador de Maletines</h1>
+  <p class="subtitle">Elegí si querés jugar la partida clásica o usar el simulador como base para una dinámica con personas o grupos.</p>
+
+  <div class="menu-grid">
+    <a class="menu-card" href="juego.html">
+      <span class="icon">🎲</span>
+      <h2>Jugar</h2>
+      <p>La experiencia completa: elegí maletín, abrí en rondas, negociá con la banca. Incluye modo TV y modo Seguimiento para anotar un programa en vivo.</p>
+    </a>
+
+    <a class="menu-card dynamics" href="dinamicas.html">
+      <span class="icon">🧩</span>
+      <h2>Dinámicas</h2>
+      <p>Ejercicios individuales y grupales basados en el mismo modelo, pensados para usar en sesiones con personas reales.</p>
+    </a>
+  </div>
+
+</body>
+</html>
