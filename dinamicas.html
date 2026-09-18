@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dinámicas - Simulador de Maletines</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="dinamicas.css">
+</head>
+<body>
+
+  <div class="top-nav">
+    <a href="index.html">‹ Menú principal</a>
+    <a href="juego.html">Ir al juego</a>
+  </div>
+
+  <h1>Dinámicas</h1>
+  <p class="subtitle">Ejercicios basados en el mismo modelo de decisión bajo incertidumbre, pensados para usar con personas o grupos.</p>
+
+  <!-- ============================ Selector ============================ -->
+  <div class="screen active" id="screen-menu">
+    <div class="dyn-grid">
+
+      <div class="dyn-card" data-target="individual">
+        <span class="dyn-tag individual">Individual</span>
+        <h3>Perfil de decisión (estandarizada)</h3>
+        <p>Mismo tablero para cada persona (no se mezcla al azar), para poder comparar entre candidatos. Mide perfil de riesgo y tiempo de deliberación en cada oferta.</p>
+      </div>
+
+      <div class="dyn-card" data-target="group">
+        <span class="dyn-tag grupal">Grupal</span>
+        <h3>Consenso cronometrado</h3>
+        <p>El grupo debate y decide en equipo bajo presión de tiempo. Se registra quién impulsó cada decisión, para observar liderazgo y participación.</p>
+      </div>
+
+      <div class="dyn-card disabled">
+        <span class="dyn-tag grupal">Grupal</span>
+        <h3>Equipos enfrentados</h3>
+        <p>Dos o más equipos compiten con tableros propios; gana quien deja menos valor sobre la mesa.</p>
+        <span class="soon">Próximamente</span>
+      </div>
+
+      <div class="dyn-card disabled">
+        <span class="dyn-tag individual">Individual</span>
+        <h3>Consistencia (test-retest)</h3>
+        <p>La misma persona repite el ejercicio en dos momentos distintos para observar estabilidad en su perfil de riesgo.</p>
+        <span class="soon">Próximamente</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======================= Individual: intro ======================= -->
+  <div class="screen" id="screen-individual-intro">
+    <div class="intro-box">
+      <h2>Perfil de decisión — versión estandarizada</h2>
+      <p class="note">
+        El tablero es siempre el mismo (mismos premios en los mismos maletines), para que el resultado
+        se pueda comparar entre personas. Se registra qué decisión tomó en cada oferta y cuánto tardó en tomarla.
+      </p>
+      <div class="field-row">
+        <input type="text" id="ind-name-input" placeholder="Nombre del participante (opcional)">
+      </div>
+      <div class="panel-actions">
+        <button class="btn btn-ghost" data-back>‹ Volver</button>
+        <button class="btn btn-deal" id="ind-start-btn">Iniciar prueba</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= Individual: juego ======================= -->
+  <div class="screen" id="screen-individual-play">
+    <div class="dashboard">
+      <div class="metric-card"><h3>Ronda</h3><div class="value" id="ind-round-label">-</div></div>
+      <div class="metric-card"><h3>Restantes</h3><div class="value" id="ind-remaining">0</div></div>
+      <div class="metric-card"><h3>Valor Esperado</h3><div class="value" id="ind-ve">$0</div></div>
+      <div class="metric-card"><h3>Oferta Estimada</h3><div class="value offer" id="ind-offer">$0</div></div>
+    </div>
+
+    <div class="status-bar" id="ind-status">Elegí tu maletín</div>
+
+    <div class="player-case-bar" id="ind-player-bar" hidden>
+      <span class="label">Tu maletín</span>
+      <span class="num" id="ind-player-num">-</span>
+      <span class="hint" id="ind-player-hint">queda cerrado hasta el final</span>
+    </div>
+
+    <div class="main-container">
+      <div class="values-column" id="ind-low-list"></div>
+      <div class="cases-grid" id="ind-cases-grid"></div>
+      <div class="values-column" id="ind-high-list"></div>
+    </div>
+
+    <div class="controls">
+      <button class="reset-btn" id="ind-reset-btn">Reiniciar prueba</button>
+    </div>
+  </div>
+
+  <!-- Overlay oferta individual -->
+  <div class="overlay" id="ind-offer-overlay" hidden>
+    <div class="panel">
+      <h2>La banca te ofrece</h2>
+      <div class="big-amount" id="ind-offer-amount">$0</div>
+      <p class="panel-sub" id="ind-offer-sub"></p>
+      <div class="panel-actions">
+        <button class="btn btn-deal" id="ind-deal-btn">Trato</button>
+        <button class="btn btn-nodeal" id="ind-nodeal-btn">No Trato</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay cambio final individual -->
+  <div class="overlay" id="ind-swap-overlay" hidden>
+    <div class="panel">
+      <h2>Última decisión</h2>
+      <p class="panel-sub" id="ind-swap-sub"></p>
+      <div class="panel-actions">
+        <button class="btn btn-keep" id="ind-keep-btn">Me quedo con el mío</button>
+        <button class="btn btn-swap" id="ind-swap-btn">Cambiar maletín</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay resultado individual -->
+  <div class="overlay" id="ind-result-overlay" hidden>
+    <div class="panel wide">
+      <h2 id="ind-result-title">Fin de la prueba</h2>
+      <div class="big-amount" id="ind-result-amount">$0</div>
+      <p class="panel-sub" id="ind-result-sub"></p>
+      <div class="risk-profile" id="ind-risk-profile">
+        <span class="risk-tag" id="ind-risk-tag">-</span>
+        <p id="ind-risk-detail"></p>
+      </div>
+      <div class="result-history" id="ind-result-history"></div>
+      <div class="panel-actions">
+        <button class="btn btn-ghost" id="ind-print-btn">Imprimir resumen</button>
+        <button class="btn btn-deal" id="ind-again-btn">Nueva prueba</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================== Grupal: intro ========================== -->
+  <div class="screen" id="screen-group-intro">
+    <div class="intro-box">
+      <h2>Consenso grupal cronometrado</h2>
+      <p class="note">
+        El grupo mira el mismo tablero (proyectado) y debe decidir en conjunto, dentro de un tiempo límite,
+        si acepta cada oferta de la banca. Podés anotar quién impulsó cada decisión para observar
+        participación y liderazgo.
+      </p>
+      <div class="field-row">
+        <input type="text" id="grp-name-input" placeholder="Nombre del/de la participante">
+        <button class="btn btn-deal" id="grp-add-btn" type="button">Agregar</button>
+      </div>
+      <div class="participant-list" id="grp-participant-list">
+        <p class="empty-note">Todavía no agregaste participantes (es opcional).</p>
+      </div>
+      <div class="panel-actions">
+        <button class="btn btn-ghost" data-back>‹ Volver</button>
+        <button class="btn btn-deal" id="grp-start-btn">Iniciar dinámica</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================== Grupal: juego ========================== -->
+  <div class="screen" id="screen-group-play">
+    <div class="dashboard">
+      <div class="metric-card"><h3>Ronda</h3><div class="value" id="grp-round-label">-</div></div>
+      <div class="metric-card"><h3>Restantes</h3><div class="value" id="grp-remaining">0</div></div>
+      <div class="metric-card"><h3>Valor Esperado</h3><div class="value" id="grp-ve">$0</div></div>
+      <div class="metric-card"><h3>Oferta Estimada</h3><div class="value offer" id="grp-offer">$0</div></div>
+    </div>
+
+    <div class="status-bar" id="grp-status">Elegí el maletín del grupo</div>
+
+    <div class="player-case-bar" id="grp-player-bar" hidden>
+      <span class="label">Maletín del grupo</span>
+      <span class="num" id="grp-player-num">-</span>
+      <span class="hint" id="grp-player-hint">queda cerrado hasta el final</span>
+    </div>
+
+    <div class="main-container">
+      <div class="values-column" id="grp-low-list"></div>
+      <div class="cases-grid" id="grp-cases-grid"></div>
+      <div class="values-column" id="grp-high-list"></div>
+    </div>
+
+    <div class="controls">
+      <button class="reset-btn" id="grp-reset-btn">Reiniciar dinámica</button>
+    </div>
+  </div>
+
+  <!-- Overlay oferta grupal (con cronómetro y selector de quién impulsó) -->
+  <div class="overlay" id="grp-offer-overlay" hidden>
+    <div class="panel">
+      <h2>La banca ofrece</h2>
+      <div class="countdown-ring" id="grp-countdown">45s</div>
+      <div class="big-amount" id="grp-offer-amount">$0</div>
+      <p class="panel-sub" id="grp-offer-sub"></p>
+      <div class="driver-select" id="grp-driver-wrap">
+        <label for="grp-driver-select">¿Quién impulsó esta decisión? (opcional)</label>
+        <select id="grp-driver-select">
+          <option value="">— Sin especificar —</option>
+        </select>
+      </div>
+      <div class="panel-actions">
+        <button class="btn btn-deal" id="grp-deal-btn">Trato</button>
+        <button class="btn btn-nodeal" id="grp-nodeal-btn">No Trato</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay cambio final grupal -->
+  <div class="overlay" id="grp-swap-overlay" hidden>
+    <div class="panel">
+      <h2>Última decisión</h2>
+      <p class="panel-sub" id="grp-swap-sub"></p>
+      <div class="driver-select">
+        <label for="grp-swap-driver-select">¿Quién impulsó esta decisión? (opcional)</label>
+        <select id="grp-swap-driver-select">
+          <option value="">— Sin especificar —</option>
+        </select>
+      </div>
+      <div class="panel-actions">
+        <button class="btn btn-keep" id="grp-keep-btn">Se queda con el suyo</button>
+        <button class="btn btn-swap" id="grp-swap-btn">Cambiar maletín</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay resultado grupal -->
+  <div class="overlay" id="grp-result-overlay" hidden>
+    <div class="panel wide">
+      <h2 id="grp-result-title">Fin de la dinámica</h2>
+      <div class="big-amount" id="grp-result-amount">$0</div>
+      <p class="panel-sub" id="grp-result-sub"></p>
+      <div class="participation-list" id="grp-participation-list"></div>
+      <div class="result-history" id="grp-result-history"></div>
+      <div class="panel-actions">
+        <button class="btn btn-ghost" id="grp-print-btn">Imprimir resumen</button>
+        <button class="btn btn-deal" id="grp-again-btn">Nueva dinámica</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="dinamicas.js"></script>
+</body>
+</html>
