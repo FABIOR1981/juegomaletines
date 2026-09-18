@@ -141,7 +141,7 @@
         <div class="result-history" id="ind-result-history"></div>
       </div>
 
-      <!-- Sección del Informe Técnico (Oculto por defecto, scrolleable) -->
+      <!-- Sección del Informe Técnico Individual -->
       <div id="ind-pro-report" class="pro-report-container" hidden>
         <div class="pro-report-header">
           <h3>📋 Informe Técnico de Evaluación Conductual</h3>
@@ -249,13 +249,27 @@
   <!-- Overlay resultado grupal -->
   <div class="overlay" id="grp-result-overlay" hidden>
     <div class="panel wide">
-      <h2 id="grp-result-title">Fin de la dinámica</h2>
-      <div class="big-amount" id="grp-result-amount">$0</div>
-      <p class="panel-sub" id="grp-result-sub"></p>
-      <div class="participation-list" id="grp-participation-list"></div>
-      <div class="result-history" id="grp-result-history"></div>
-      <div class="panel-actions">
-        <button class="btn btn-ghost" id="grp-print-btn">Imprimir resumen</button>
+      
+      <!-- Vista limpia para el grupo -->
+      <div id="grp-player-view-block">
+        <h2 id="grp-result-title">Fin de la dinámica</h2>
+        <div class="big-amount" id="grp-result-amount">$0</div>
+        <p class="panel-sub" id="grp-result-sub"></p>
+        <div class="participation-list" id="grp-participation-list"></div>
+        <div class="result-history" id="grp-result-history"></div>
+      </div>
+
+      <!-- Sección del Informe Técnico Grupal -->
+      <div id="grp-pro-report" class="pro-report-container" hidden>
+        <div class="pro-report-header">
+          <h3>📋 Informe Técnico de Dinámica Grupal</h3>
+          <button class="btn btn-ghost" id="grp-print-pro-btn" style="padding:4px 12px; font-size:0.75rem;">🖨️ Imprimir Informe Grupal</button>
+        </div>
+        <div id="grp-pro-report-content" class="pro-report-body"></div>
+      </div>
+
+      <div class="panel-actions" style="margin-top:20px;">
+        <button class="btn btn-ghost" id="grp-toggle-pro-btn">👁️ Ver Informe Profesional</button>
         <button class="btn btn-deal" id="grp-again-btn">Nueva dinámica</button>
       </div>
     </div>

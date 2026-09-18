@@ -1,8 +1,6 @@
 /* ==========================================================================
    Dinámicas — archivo independiente del juego principal (juego.html /
-   script.js / styles.css). Comparte el mismo modelo de valor esperado /
-   oferta de la banca, pero con dos variantes pensadas para uso con
-   personas o grupos, no para jugar solo.
+   script.js / styles.css).
    ========================================================================== */
 
 const CONFIG = {
@@ -66,16 +64,13 @@ function bankOfferOf(vals) {
   return expectedValueOf(vals) * factor;
 }
 
-/* -------------------------- Navegación entre pantallas -------------------- */
-
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   $(id).classList.add('active');
 }
 
 /* ============================================================================
-   DINÁMICA INDIVIDUAL — tablero fijo (seededShuffle), mide perfil de riesgo
-   y tiempo de deliberación por oferta.
+   DINÁMICA INDIVIDUAL
    ============================================================================ */
 
 let ind = null;
@@ -308,8 +303,6 @@ function indFinish(result) {
   $('ind-result-overlay').hidden = false;
 }
 
-/* --------------------------------- Render --------------------------------- */
-
 function indRenderAll() {
   indRenderBoard();
   indRenderMetrics();
@@ -431,10 +424,8 @@ function indRenderResult() {
         <span class="hist-dec ${h.decision === 'Trato' ? 'deal' : 'nodeal'}">${h.decision}</span>
       </div>`).join('');
 
-  // Generar reporte profesional
   indRenderProReport(ind, profile, totalMs, avgMs);
 
-  // Estado inicial
   $('ind-pro-report').hidden = true;
   $('ind-toggle-pro-btn').innerText = '👁️ Ver Informe Profesional';
 }
@@ -444,8 +435,7 @@ function hideIndOverlays() {
 }
 
 /* ============================================================================
-   DINÁMICA GRUPAL — tablero al azar, decisión en consenso con cronómetro y
-   registro opcional de quién impulsó cada decisión.
+   DINÁMICA GRUPAL
    ============================================================================ */
 
 let grpParticipants = [];
@@ -632,6 +622,77 @@ function grpResolveFinal(didSwap) {
   });
 }
 
+function grpRenderProReport(grp) {
+  const history = grp.history || [];
+  const tally = grpParticipationTally();
+  const totalDecisions = history.length;
+
+  let leadersHtml = '';
+  if (tally.length) {
+    leadersHtml = tally.map(([name, count]) => {
+      const pct = Math.round((count / totalDecisions) * 100);
+      return `<li><strong>${name}:</strong> Impulsó ${count} decisión(es) (${pct}% de influencia en el grupo).</li>`;
+    }).join('');
+  } else {
+    leadersHtml = '<li>No se asignaron líderes o impulsores explícitos durante la dinámica.</li>';
+  }
+
+  const autoDecisions = history.filter(h => h.auto).length;
+  const timeObs = autoDecisions > 0
+    ? `El grupo tuvo ${autoDecisions} decisión(es) forzada(s) por agotamiento del tiempo de 45s, indicando dificultad para alcanzar consenso bajo presión.`
+    : 'El grupo gestionó eficazmente el tiempo disponible (45s por ronda), logrando consensos dentro del límite estipulado.';
+
+  const tableRows = history.map(h => `
+    <tr style="border-bottom:1px solid rgba(148,163,184,0.1);">
+      <td style="padding:6px;">${h.isFinal ? 'Final' : 'Ronda ' + h.round}</td>
+      <td style="padding:6px;">${h.ve ? formatMoney(h.ve) : '—'}</td>
+      <td style="padding:6px;">${h.offer ? formatMoney(h.offer) : '—'}</td>
+      <td style="padding:6px; font-weight:bold;">${h.decision}${h.auto ? ' (Tiempo agotado)' : ''}</td>
+      <td style="padding:6px;">${h.driver || 'Consenso no registrado'}</td>
+    </tr>
+  `).join('');
+
+  const html = `
+    <div style="font-size:0.85rem; display:flex; flex-direction:column; gap:10px;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;">
+        <div><strong>Modalidad:</strong> Consenso Grupal Cronometrado</div>
+        <div><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-ES')}</div>
+        <div><strong>Participantes Registrados:</strong> ${grpParticipants.length || 'Sin lista previa'}</div>
+        <div><strong>Resultado Final:</strong> ${formatMoney(grp.result.amount)}</div>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;">
+        <strong style="display:block; margin-bottom:4px;">Análisis de Liderazgo e Influencia:</strong>
+        <ul style="margin-left:18px; margin-bottom:6px; line-height:1.4;">
+          ${leadersHtml}
+        </ul>
+        <strong style="display:block; margin-top:8px; margin-bottom:4px;">Gestión del Tiempo y Presión:</strong>
+        <p style="margin:0; line-height:1.4;">${timeObs}</p>
+      </div>
+
+      <div style="margin-top:6px;">
+        <strong style="display:block; margin-bottom:6px;">Matriz de Decisiones e Impulsores:</strong>
+        <table style="width:100%; border-collapse:collapse; text-align:left; font-size:0.8rem; background:rgba(0,0,0,0.2); border-radius:8px; overflow:hidden;">
+          <thead>
+            <tr style="background:rgba(148,163,184,0.1); font-family:Orbitron,sans-serif; font-size:0.68rem; text-transform:uppercase;">
+              <th style="padding:6px;">Ronda</th>
+              <th style="padding:6px;">VE</th>
+              <th style="padding:6px;">Oferta</th>
+              <th style="padding:6px;">Decisión</th>
+              <th style="padding:6px;">Impulsor</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  $('grp-pro-report-content').innerHTML = html;
+}
+
 function grpFinish(result) {
   grp.result = result;
   grp.phase = 'end';
@@ -643,8 +704,6 @@ function grpFinish(result) {
   grpRenderResult();
   $('grp-result-overlay').hidden = false;
 }
-
-/* --------------------------------- Render --------------------------------- */
 
 function grpRenderAll() {
   grpRenderBoard();
@@ -782,6 +841,10 @@ function grpRenderResult() {
         <span class="hist-dec ${h.auto ? 'auto' : (h.decision === 'Trato' ? 'deal' : 'nodeal')}">${h.decision}${h.auto ? ' (auto)' : ''}</span>
         <span>${h.driver || '—'}</span>
       </div>`).join('');
+
+  grpRenderProReport(grp);
+  $('grp-pro-report').hidden = true;
+  $('grp-toggle-pro-btn').innerText = '👁️ Ver Informe Profesional';
 }
 
 function hideGrpOverlays() {
@@ -792,7 +855,6 @@ function hideGrpOverlays() {
 /* ----------------------------- Eventos globales --------------------------- */
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Menú
   document.querySelectorAll('.dyn-card[data-target]').forEach(card => {
     card.addEventListener('click', () => {
       const target = card.dataset.target;
@@ -805,12 +867,11 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', () => showScreen('screen-menu'));
   });
 
-  // ---- Individual ----
+  // Individual
   $('ind-start-btn').addEventListener('click', () => indStart($('ind-name-input').value));
   $('ind-deal-btn').addEventListener('click', () => indDecide('Trato'));$('ind-nodeal-btn').addEventListener('click', () => indDecide('No Trato'));
   $('ind-keep-btn').addEventListener('click', () => indResolveFinal(false));$('ind-swap-btn').addEventListener('click', () => indResolveFinal(true));
 
-  // Toggle de la vista profesional
   $('ind-toggle-pro-btn').addEventListener('click', () => {
     const reportBox = $('ind-pro-report');
     const isHidden = reportBox.hidden;
@@ -818,7 +879,6 @@ document.addEventListener('DOMContentLoaded', () => {
     $('ind-toggle-pro-btn').innerText = isHidden ? '🙈 Ocultar Informe Profesional' : '👁️ Ver Informe Profesional';
   });
 
-  // Impresión exclusiva del informe profesional
   $('ind-print-pro-btn').addEventListener('click', () => {
     document.body.classList.add('printing-pro-report');
     window.print();
@@ -836,7 +896,7 @@ document.addEventListener('DOMContentLoaded', () => {
     indStart(ind ? ind.name : '');
   });
 
-  // ---- Grupal ----
+  // Grupal
   $('grp-add-btn').addEventListener('click', () => {
     const input = $('grp-name-input');
     grpAddParticipant(input.value);
@@ -848,10 +908,25 @@ document.addEventListener('DOMContentLoaded', () => {
   $('grp-start-btn').addEventListener('click', grpStart);
   $('grp-deal-btn').addEventListener('click', () => grpDecide('Trato', false));$('grp-nodeal-btn').addEventListener('click', () => grpDecide('No Trato', false));
   $('grp-keep-btn').addEventListener('click', () => grpResolveFinal(false));$('grp-swap-btn').addEventListener('click', () => grpResolveFinal(true));
-  $('grp-print-btn').addEventListener('click', () => window.print());$('grp-again-btn').addEventListener('click', () => {
+
+  $('grp-toggle-pro-btn').addEventListener('click', () => {
+    const reportBox = $('grp-pro-report');
+    const isHidden = reportBox.hidden;
+    reportBox.hidden = !isHidden;
+    $('grp-toggle-pro-btn').innerText = isHidden ? '🙈 Ocultar Informe Profesional' : '👁️ Ver Informe Profesional';
+  });
+
+  $('grp-print-pro-btn').addEventListener('click', () => {
+    document.body.classList.add('printing-grp-report');
+    window.print();
+    document.body.classList.remove('printing-grp-report');
+  });
+
+  $('grp-again-btn').addEventListener('click', () => {
     hideGrpOverlays();
     showScreen('screen-group-intro');
   });
+
   $('grp-reset-btn').addEventListener('click', () => {
     if (grp && grp.history.length && !window.confirm('Esto reinicia la dinámica actual. ¿Continuar?')) return;
     grpStart();
