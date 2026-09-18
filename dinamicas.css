@@ -1,6 +1,5 @@
 /* ==========================================================================
-   Dinámicas — Estilos independientes para el módulo de dinámicas grupales
-   e individuales.
+   Dinámicas — Estilos independientes con la estética original del juego principal
    ========================================================================== */
 
 :root {
@@ -22,7 +21,7 @@
   padding: 0;
 }
 
-/* Regla crítica: anula display: flex cuando el elemento tiene la propiedad hidden */
+/* Regla crítica para garantizar el ocultamiento de elementos */
 .overlay[hidden],
 [hidden] {
   display: none !important;
@@ -290,7 +289,7 @@ input[type="text"]:focus {
   font-size: 0.8rem;
 }
 
-/* ---------------- Tablero Principal ---------------- */
+/* ---------------- Tablero Principal (Estilo Clásico del Juego) ---------------- */
 
 .main-container {
   display: grid;
