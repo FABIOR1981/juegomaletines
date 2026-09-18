@@ -1,6 +1,5 @@
 /* ==========================================================================
-   Dinámicas — archivo independiente del juego principal (juego.html /
-   script.js / styles.css).
+   Dinámicas — Archivo corregido y refactorizado para control estricto de estado
    ========================================================================== */
 
 const CONFIG = {
@@ -431,7 +430,10 @@ function indRenderResult() {
 }
 
 function hideIndOverlays() {
-  ['ind-offer-overlay', 'ind-swap-overlay', 'ind-result-overlay'].forEach(id => { $(id).hidden = true; });
+  ['ind-offer-overlay', 'ind-swap-overlay', 'ind-result-overlay'].forEach(id => {
+    const el = $(id);
+    if (el) el.hidden = true;
+  });
 }
 
 /* ============================================================================
@@ -473,8 +475,10 @@ function renderGrpParticipantEditor() {
 function grpFillDriverSelects() {
   ['grp-driver-select', 'grp-swap-driver-select'].forEach(id => {
     const sel = $(id);
-    sel.innerHTML = '<option value="">— Sin especificar —</option>' +
-      grpParticipants.map(n => `<option value="${n}">${n}</option>`).join('');
+    if (sel) {
+      sel.innerHTML = '<option value="">— Sin especificar —</option>' +
+        grpParticipants.map(n => `<option value="${n}">${n}</option>`).join('');
+    }
   });
 }
 
@@ -493,6 +497,7 @@ function grpStart() {
     history: [],
     result: null
   };
+  clearInterval(grpTimerHandle);
   grpFillDriverSelects();
   hideGrpOverlays();
   showScreen('screen-group-play');
@@ -849,7 +854,10 @@ function grpRenderResult() {
 
 function hideGrpOverlays() {
   clearInterval(grpTimerHandle);
-  ['grp-offer-overlay', 'grp-swap-overlay', 'grp-result-overlay'].forEach(id => { $(id).hidden = true; });
+  ['grp-offer-overlay', 'grp-swap-overlay', 'grp-result-overlay'].forEach(id => {
+    const el = $(id);
+    if (el) el.hidden = true;
+  });
 }
 
 /* ----------------------------- Eventos globales --------------------------- */
