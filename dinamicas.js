@@ -269,6 +269,77 @@ function indBuildBehavioralJSON(ind) {
   };
 }
 
+function indRenderProReport(ind, profile, totalMs, avgMs) {
+  const history = ind.history || [];
+  const last = history.length ? history[history.length - 1] : null;
+  const ratio = (last && last.ve) ? (last.offer / last.ve) : 0;
+
+  const speedStyle = avgMs < 3000 ? "Procesamiento Intuitivo / Heurístico Rápido" : "Procesamiento Pausado / Analítico Reflexivo";
+  const outcomeText = ind.result.type === 'deal' ? `Aceptó oferta de ${formatMoney(ind.result.amount)}` : `Rechazó todas las ofertas (Llegó al final)`;
+
+  let qualitativeObs = '';
+  if (ind.result.type !== 'deal') {
+    qualitativeObs = 'Demuestra una orientación marcada hacia la maximización del resultado bajo alta incertidumbre, priorizando el beneficio potencial sobre la seguridad del capital inmediato.';
+  } else if (ratio < 0.68) {
+    qualitativeObs = 'Muestra una aversión al riesgo pronunciada. Estuvo dispuesto a ceder más del 32% del valor esperado ponderado a cambio de eliminar la incertidumbre.';
+  } else {
+    qualitativeObs = 'Muestra una conducta negociadora equilibrada, evaluando racionalmente el costo de oportunidad y cerrando cuando el retorno marginal justificaba la certeza.';
+  }
+
+  const tableRows = history.map(h => {
+    const rPct = Math.round((h.offer / h.ve) * 100);
+    return `
+      <tr style="border-bottom:1px solid rgba(148,163,184,0.1);">
+        <td style="padding:6px;">Ronda ${h.round}</td>
+        <td style="padding:6px;">${formatMoney(h.ve)}</td>
+        <td style="padding:6px; color:var(--gold);">${formatMoney(h.offer)} (${rPct}%)</td>
+        <td style="padding:6px; font-weight:bold; color:${h.decision === 'Trato' ? 'var(--green)' : 'var(--red-val)'};">${h.decision}</td>
+        <td style="padding:6px;">${(h.latencyMs / 1000).toFixed(1)}s</td>
+      </tr>
+    `;
+  }).join('');
+
+  const html = `
+    <div style="font-size:0.85rem; color:#cbd5e1; display:flex; flex-direction:column; gap:10px;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;">
+        <div><strong>Participante:</strong> ${ind.name || 'Sin especificar'}</div>
+        <div><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-ES')}</div>
+        <div><strong>Perfil de Riesgo:</strong> <span style="color:var(--gold); font-weight:bold;">${profile.tag}</span></div>
+        <div><strong>Estilo de Decisión:</strong> ${speedStyle}</div>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;">
+        <strong style="color:#f8fafc; display:block; margin-bottom:4px;">Resumen Ejecutivo:</strong>
+        <ul style="margin-left:18px; margin-bottom:0; line-height:1.4;">
+          <li><strong>Resultado Final:</strong> ${outcomeText}.</li>
+          <li><strong>Tiempo Total de Deliberación:</strong> ${(totalMs / 1000).toFixed(1)} segundos (Promedio de ${(avgMs / 1000).toFixed(1)}s por oferta).</li>
+          <li><strong>Diagnóstico Cualitativo:</strong> ${qualitativeObs}</li>
+        </ul>
+      </div>
+
+      <div style="margin-top:6px;">
+        <strong style="color:#f8fafc; display:block; margin-bottom:6px;">Matriz Cuantitativa de Ofertas y Tiempos:</strong>
+        <table style="width:100%; border-collapse:collapse; text-align:left; font-size:0.8rem; background:rgba(0,0,0,0.2); border-radius:8px; overflow:hidden;">
+          <thead>
+            <tr style="background:rgba(148,163,184,0.1); color:#94a3b8; font-family:Orbitron,sans-serif; font-size:0.68rem; text-transform:uppercase;">
+              <th style="padding:6px;">Ronda</th>
+              <th style="padding:6px;">VE</th>
+              <th style="padding:6px;">Oferta (% VE)</th>
+              <th style="padding:6px;">Decisión</th>
+              <th style="padding:6px;">Tiempo</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  $('ind-pro-report-content').innerHTML = html;
+}
+
 function indFinish(result) {
   ind.result = result;
   ind.phase = 'end';
@@ -404,14 +475,14 @@ function indRenderResult() {
         <span class="hist-dec ${h.decision === 'Trato' ? 'deal' : 'nodeal'}">${h.decision}</span>
       </div>`).join('');
 
-  // Generar datos para la vista profesional (oculta por defecto)
+  // Generar reporte profesional en HTML
+  indRenderProReport(ind, profile, totalMs, avgMs);
+
+  // Almacenar el objeto JSON en el botón para exportación bajo demanda
   const behavioralData = indBuildBehavioralJSON(ind);
-  $('ind-json-output').innerText = JSON.stringify(behavioralData, null, 2);
+  $('ind-copy-json-btn').dataset.json = JSON.stringify(behavioralData, null, 2);
 
-  $('ind-pro-summary').innerText = 
-    `Evaluado: ${ind.name} | Tiempo total deliberación: ${(totalMs / 1000).toFixed(1)}s (Promedio: ${(avgMs / 1000).toFixed(1)}s por oferta) | Perfil: ${profile.tag}. Nota: Observación de corrida única para uso cualitativo.`;
-
-  // Asegurar que el informe pro inicie oculto
+  // Asegurar estado oculto por defecto
   $('ind-pro-report').hidden = true;
   $('ind-toggle-pro-btn').innerText = '👁️ Ver Informe Profesional';
 }
@@ -787,7 +858,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('ind-nodeal-btn').addEventListener('click', () => indDecide('No Trato'));$('ind-keep-btn').addEventListener('click', () => indResolveFinal(false));
   $('ind-swap-btn').addEventListener('click', () => indResolveFinal(true));$('ind-print-btn').addEventListener('click', () => window.print());
 
-  // Toggle de la vista profesional/JSON
+  // Toggle de la vista profesional
   $('ind-toggle-pro-btn').addEventListener('click', () => {
     const reportBox = $('ind-pro-report');
     const isHidden = reportBox.hidden;
@@ -795,12 +866,13 @@ document.addEventListener('DOMContentLoaded', () => {
     $('ind-toggle-pro-btn').innerText = isHidden ? '🙈 Ocultar Informe Profesional' : '👁️ Ver Informe Profesional';
   });
 
+  // Botón para copiar JSON técnico
   $('ind-copy-json-btn').addEventListener('click', () => {
-    const text = $('ind-json-output').innerText;
+    const text = $('ind-copy-json-btn').dataset.json || '';
     navigator.clipboard.writeText(text).then(() => {
       const btn = $('ind-copy-json-btn');
-      btn.innerText = '¡Copiado!';
-      setTimeout(() => { btn.innerText = 'Copiar JSON'; }, 2000);
+      btn.innerText = '¡JSON Copiado!';
+      setTimeout(() => { btn.innerText = 'Copiar JSON Técnico'; }, 2000);
     });
   });
 

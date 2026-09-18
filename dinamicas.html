@@ -130,7 +130,7 @@
       <div class="big-amount" id="ind-result-amount">$0</div>
       <p class="panel-sub" id="ind-result-sub"></p>
       
-      <!-- Vista limpia para el jugador -->
+      <!-- Vista limpia para el participante -->
       <div class="risk-profile" id="ind-risk-profile">
         <span class="risk-tag" id="ind-risk-tag">-</span>
         <p id="ind-risk-detail"></p>
@@ -138,18 +138,15 @@
 
       <div class="result-history" id="ind-result-history"></div>
 
-      <!-- Sección del Informe Técnico / Facilitador (Oculto por defecto) -->
-      <div id="ind-pro-report" hidden style="margin-top:18px; padding-top:14px; border-top:1px dashed rgba(148,163,184,0.3); text-align:left;">
-        <h3 style="font-family:Orbitron,sans-serif; font-size:0.8rem; color:var(--gold); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">
-          📊 Informe para el Facilitador / Evaluador
-        </h3>
-        <p id="ind-pro-summary" style="font-size:0.88rem; color:#cbd5e1; line-height:1.4; margin-bottom:12px;"></p>
-        
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-          <span style="font-family:Orbitron,sans-serif; font-size:0.7rem; color:#64748b; text-transform:uppercase;">Datos Estructurados (JSON)</span>
-          <button class="btn btn-ghost" id="ind-copy-json-btn" style="padding:3px 8px; font-size:0.68rem;">Copiar JSON</button>
+      <!-- Sección del Informe Técnico de Evaluación Conductual -->
+      <div id="ind-pro-report" hidden style="margin-top:18px; padding:16px; background:rgba(15, 23, 42, 0.85); border:1px solid rgba(255, 215, 0, 0.3); border-radius:12px; text-align:left;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,215,0,0.2); padding-bottom:8px; margin-bottom:12px;">
+          <h3 style="font-family:Orbitron,sans-serif; font-size:0.82rem; color:var(--gold); text-transform:uppercase; letter-spacing:1px; margin:0;">
+            📋 Informe Técnico de Evaluación Conductual
+          </h3>
+          <button class="btn btn-ghost" id="ind-copy-json-btn" style="padding:3px 8px; font-size:0.65rem;">Copiar JSON Técnico</button>
         </div>
-        <pre id="ind-json-output" style="background:#0b101d; border:1px solid rgba(0,240,255,0.3); padding:10px; border-radius:8px; color:#00f0ff; font-size:0.75rem; max-height:140px; overflow-y:auto; font-family:monospace; margin:0;"></pre>
+        <div id="ind-pro-report-content"></div>
       </div>
 
       <div class="panel-actions" style="margin-top:20px;">
