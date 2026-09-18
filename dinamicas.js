@@ -269,7 +269,7 @@ function indRenderProReport(ind, profile, totalMs, avgMs) {
         <ul style="margin-left:18px; margin-bottom:0; line-height:1.4;">
           <li><strong>Resultado Final:</strong> ${outcomeText}.</li>
           <li><strong>Tiempo Total de Deliberación:</strong> ${(totalMs / 1000).toFixed(1)} segundos (Promedio de ${(avgMs / 1000).toFixed(1)}s por oferta).</li>
-          <li><strong>Diagnóstico Cualitativo:</strong> ${qualitativeObs}</li>
+          <li><strong>Observación Cualitativa:</strong> ${qualitativeObs}</li>
         </ul>
       </div>
 
