@@ -18,7 +18,7 @@ const BANK = { start: 0.60, end: 0.90 };
 
 // Semilla fija: el tablero de la dinámica individual es SIEMPRE el mismo
 // (mismo premio en el mismo maletín), para que el resultado sea comparable
-// entre personas distintas. No usar Math.random acá es intencional.
+// entre personas distintas.
 const FIXED_SEED = 20260918;
 
 const GROUP_ROUND_SECONDS = 45;
@@ -139,8 +139,7 @@ function indShowOffer() {
   const offer = bankOfferOf(vals);
   const pending = vals.length - 1;
 
-  $('ind-offer-amount').innerText = formatMoney(offer);
-  $('ind-offer-sub').innerText =
+  $('ind-offer-amount').innerText = formatMoney(offer);$('ind-offer-sub').innerText =
     `Valor esperado: ${formatMoney(ve)} · Oferta = ${Math.round((offer / ve) * 100)}% del VE · ` +
     (pending > 0 ? `Si rechazás, seguís con ${pending} maletín${pending === 1 ? '' : 'es'}.` : 'Última oportunidad antes del cambio final.');
 
@@ -237,6 +236,50 @@ function indComputeRiskProfile(result) {
   };
 }
 
+// Generador de objeto JSON para exportación e IA
+function indBuildBehavioralJSON(ind) {
+  const history = ind.history || [];
+  const totalMs = history.reduce((acc, h) => acc + h.latencyMs, 0);
+  const avgMs = history.length ? totalMs / history.length : 0;
+
+  const lastHistory = history.length ? history[history.length - 1] : null;
+  const lastRatio = (lastHistory && lastHistory.ve) ? lastHistory.offer / lastHistory.ve : 0;
+
+  let riskCategory = 'MODERATE';
+  if (ind.result.type !== 'deal') {
+    riskCategory = 'RISK_SEEKING';
+  } else if (lastRatio < 0.68) {
+    riskCategory = 'HIGHLY_AVERSE';
+  } else if (lastRatio >= 0.85) {
+    riskCategory = 'RISK_SEEKING';
+  }
+
+  return {
+    player_id: ind.name || "Sin nombre",
+    timestamp: new Date().toISOString(),
+    session_id: "IND_" + Date.now(),
+    risk_metrics: {
+      risk_tolerance_category: riskCategory,
+      risk_attitude_index: Number(lastRatio.toFixed(2)),
+      final_outcome_type: ind.result.type,
+      accepted_offer_amount: ind.result.amount
+    },
+    cognitive_and_decision_style: {
+      decision_speed_profile: avgMs < 3000 ? "FAST_HEURISTIC" : "ANALYTICAL_PAUSED",
+      average_deliberation_seconds: Number((avgMs / 1000).toFixed(2)),
+      total_deliberation_seconds: Number((totalMs / 1000).toFixed(2))
+    },
+    decision_history: history.map(h => ({
+      round: h.round,
+      expected_value: h.ve,
+      offer_amount: h.offer,
+      offer_to_ev_ratio: Number((h.offer / h.ve).toFixed(2)),
+      decision: h.decision,
+      latency_ms: h.latencyMs
+    }))
+  };
+}
+
 function indFinish(result) {
   ind.result = result;
   ind.phase = 'end';
@@ -309,8 +352,7 @@ function indRenderMetrics() {
   $('ind-round-label').innerText = ind.phase === 'end'
     ? 'Fin'
     : ind.phase === 'pick' ? '-' : `${Math.min(ind.roundIndex + 1, totalRounds())} / ${totalRounds()}`;
-  $('ind-ve').innerText = vals.length ? formatMoney(expectedValueOf(vals)) : '$0';
-  $('ind-offer').innerText = (vals.length && ind.phase !== 'pick') ? formatMoney(bankOfferOf(vals)) : '—';
+  $('ind-ve').innerText = vals.length ? formatMoney(expectedValueOf(vals)) : '$0';$('ind-offer').innerText = (vals.length && ind.phase !== 'pick') ? formatMoney(bankOfferOf(vals)) : '—';
 }
 
 function indRenderStatus() {
@@ -354,8 +396,7 @@ function indRenderResult() {
   }
 
   $('ind-result-title').innerText = `${title} — ${ind.name}`;
-  $('ind-result-amount').innerText = formatMoney(r.amount);
-  $('ind-result-sub').innerText = sub;
+  $('ind-result-amount').innerText = formatMoney(r.amount);$('ind-result-sub').innerText = sub;
 
   const profile = indComputeRiskProfile(r);
   $('ind-risk-tag').innerText = profile.tag;
@@ -374,6 +415,10 @@ function indRenderResult() {
         <span class="hist-offer">${formatMoney(h.offer)}</span>
         <span class="hist-dec ${h.decision === 'Trato' ? 'deal' : 'nodeal'}">${h.decision} · ${(h.latencyMs / 1000).toFixed(1)}s</span>
       </div>`).join('');
+
+  // Generar y desplegar el JSON analítico
+  const behavioralData = indBuildBehavioralJSON(ind);
+  $('ind-json-output').innerText = JSON.stringify(behavioralData, null, 2);
 }
 
 function hideIndOverlays() {
@@ -477,13 +522,11 @@ function grpShowOffer() {
   const offer = bankOfferOf(vals);
   const pending = vals.length - 1;
 
-  $('grp-offer-amount').innerText = formatMoney(offer);
-  $('grp-offer-sub').innerText =
+  $('grp-offer-amount').innerText = formatMoney(offer);$('grp-offer-sub').innerText =
     `Valor esperado: ${formatMoney(ve)} · Oferta = ${Math.round((offer / ve) * 100)}% del VE · ` +
     (pending > 0 ? `Si rechazan, siguen con ${pending} maletín${pending === 1 ? '' : 'es'}.` : 'Última oportunidad antes del cambio final.');
 
-  $('grp-driver-select').value = '';
-  $('grp-offer-overlay').hidden = false;
+  $('grp-driver-select').value = '';$('grp-offer-overlay').hidden = false;
   grpRenderStatus();
   grpStartTimer(offer, ve);
 }
@@ -543,8 +586,7 @@ function grpStartFinalPhase() {
   $('grp-swap-sub').innerText =
     `Quedan dos maletines: el suyo (Nº ${mine.id}) y el Nº ${other.id}. ` +
     `Los premios vivos son ${formatMoney(Math.min(mine.value, other.value))} y ${formatMoney(Math.max(mine.value, other.value))}. ¿Cambian?`;
-  $('grp-swap-driver-select').value = '';
-  $('grp-swap-overlay').hidden = false;
+  $('grp-swap-driver-select').value = '';$('grp-swap-overlay').hidden = false;
   grpRenderAll();
 }
 
@@ -644,8 +686,7 @@ function grpRenderMetrics() {
   $('grp-round-label').innerText = grp.phase === 'end'
     ? 'Fin'
     : grp.phase === 'pick' ? '-' : `${Math.min(grp.roundIndex + 1, totalRounds())} / ${totalRounds()}`;
-  $('grp-ve').innerText = vals.length ? formatMoney(expectedValueOf(vals)) : '$0';
-  $('grp-offer').innerText = (vals.length && grp.phase !== 'pick') ? formatMoney(bankOfferOf(vals)) : '—';
+  $('grp-ve').innerText = vals.length ? formatMoney(expectedValueOf(vals)) : '$0';$('grp-offer').innerText = (vals.length && grp.phase !== 'pick') ? formatMoney(bankOfferOf(vals)) : '—';
 }
 
 function grpRenderStatus() {
@@ -697,8 +738,7 @@ function grpRenderResult() {
   }
 
   $('grp-result-title').innerText = title;
-  $('grp-result-amount').innerText = formatMoney(r.amount);
-  $('grp-result-sub').innerText = sub;
+  $('grp-result-amount').innerText = formatMoney(r.amount);$('grp-result-sub').innerText = sub;
 
   const tally = grpParticipationTally();
   const partBox = $('grp-participation-list');
@@ -749,11 +789,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ---- Individual ----
   $('ind-start-btn').addEventListener('click', () => indStart($('ind-name-input').value));
-  $('ind-deal-btn').addEventListener('click', () => indDecide('Trato'));
-  $('ind-nodeal-btn').addEventListener('click', () => indDecide('No Trato'));
-  $('ind-keep-btn').addEventListener('click', () => indResolveFinal(false));
-  $('ind-swap-btn').addEventListener('click', () => indResolveFinal(true));
-  $('ind-print-btn').addEventListener('click', () => window.print());
+  $('ind-deal-btn').addEventListener('click', () => indDecide('Trato'));$('ind-nodeal-btn').addEventListener('click', () => indDecide('No Trato'));
+  $('ind-keep-btn').addEventListener('click', () => indResolveFinal(false));$('ind-swap-btn').addEventListener('click', () => indResolveFinal(true));
+  $('ind-print-btn').addEventListener('click', () => window.print());$('ind-copy-json-btn').addEventListener('click', () => {
+    const text = $('ind-json-output').innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = $('ind-copy-json-btn');
+      btn.innerText = '¡Copiado!';
+      setTimeout(() => { btn.innerText = 'Copiar JSON'; }, 2000);
+    });
+  });
   $('ind-again-btn').addEventListener('click', () => {
     hideIndOverlays();
     $('ind-name-input').value = '';
@@ -771,16 +816,12 @@ document.addEventListener('DOMContentLoaded', () => {
     input.value = '';
     input.focus();
   });
-  $('grp-name-input').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); $('grp-add-btn').click(); }
+  $('grp-name-input').addEventListener('keydown', (e) => {     if (e.key === 'Enter') { e.preventDefault();$('grp-add-btn').click(); }
   });
   $('grp-start-btn').addEventListener('click', grpStart);
-  $('grp-deal-btn').addEventListener('click', () => grpDecide('Trato', false));
-  $('grp-nodeal-btn').addEventListener('click', () => grpDecide('No Trato', false));
-  $('grp-keep-btn').addEventListener('click', () => grpResolveFinal(false));
-  $('grp-swap-btn').addEventListener('click', () => grpResolveFinal(true));
-  $('grp-print-btn').addEventListener('click', () => window.print());
-  $('grp-again-btn').addEventListener('click', () => {
+  $('grp-deal-btn').addEventListener('click', () => grpDecide('Trato', false));$('grp-nodeal-btn').addEventListener('click', () => grpDecide('No Trato', false));
+  $('grp-keep-btn').addEventListener('click', () => grpResolveFinal(false));$('grp-swap-btn').addEventListener('click', () => grpResolveFinal(true));
+  $('grp-print-btn').addEventListener('click', () => window.print());$('grp-again-btn').addEventListener('click', () => {
     hideGrpOverlays();
     showScreen('screen-group-intro');
   });

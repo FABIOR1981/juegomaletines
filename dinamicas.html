@@ -135,7 +135,19 @@
         <p id="ind-risk-note" class="risk-note"></p>
       </div>
       <div class="result-history" id="ind-result-history"></div>
-      <div class="panel-actions">
+
+      <!-- Contenedor del perfil analítico JSON -->
+      <div style="margin-top:16px; text-align:left;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <h3 style="font-family:Orbitron,sans-serif; font-size:0.72rem; color:#64748b; text-transform:uppercase; letter-spacing:1px; margin:0;">
+            Perfil Behavioral (JSON)
+          </h3>
+          <button class="btn btn-ghost" id="ind-copy-json-btn" style="padding:4px 10px; font-size:0.7rem;">Copiar JSON</button>
+        </div>
+        <pre id="ind-json-output" style="background:#0b101d; border:1px solid rgba(0,240,255,0.3); padding:12px; border-radius:8px; color:#00f0ff; font-size:0.78rem; max-height:160px; overflow-y:auto; font-family:monospace;"></pre>
+      </div>
+
+      <div class="panel-actions" style="margin-top:20px;">
         <button class="btn btn-ghost" id="ind-print-btn">Imprimir resumen</button>
         <button class="btn btn-deal" id="ind-again-btn">Nueva prueba</button>
       </div>
@@ -193,7 +205,7 @@
     </div>
   </div>
 
-  <!-- Overlay oferta grupal (con cronómetro y selector de quién impulsó) -->
+  <!-- Overlay oferta grupal -->
   <div class="overlay" id="grp-offer-overlay" hidden>
     <div class="panel">
       <h2>La banca ofrece</h2>
