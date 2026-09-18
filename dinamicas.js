@@ -16,11 +16,7 @@ const CONFIG = {
 
 const BANK = { start: 0.60, end: 0.90 };
 
-// Semilla fija: el tablero de la dinámica individual es SIEMPRE el mismo
-// (mismo premio en el mismo maletín), para que el resultado sea comparable
-// entre personas distintas.
 const FIXED_SEED = 20260918;
-
 const GROUP_ROUND_SECONDS = 45;
 
 const $ = (id) => document.getElementById(id);
@@ -95,10 +91,10 @@ function indStart(name) {
     name: name || 'Sin nombre',
     cases: indCreateCases(),
     playerCaseId: null,
-    phase: 'pick', // pick | open | offer | swap | end
+    phase: 'pick',
     roundIndex: 0,
     opensLeft: 0,
-    history: [], // { round, ve, offer, decision, latencyMs }
+    history: [],
     offerShownAt: null,
     startedAt: performance.now(),
     result: null
@@ -201,13 +197,10 @@ function indResolveFinal(didSwap) {
 }
 
 function indComputeRiskProfile(result) {
-  const note = 'Es una observación de esta única corrida, no una medida validada de personalidad ni de tolerancia al riesgo: sirve como disparador de conversación, no como puntaje diagnóstico.';
-
   if (result.type !== 'deal') {
     return {
       tag: 'Buscador de riesgo',
-      detail: 'Llegó hasta el final sin aceptar ninguna oferta de la banca: prefirió quedarse con la incertidumbre completa antes que cerrar por un monto ya conocido.',
-      note
+      detail: 'Llegaste hasta el final sin aceptar ofertas: mantuviste la incertidumbre completa hasta el último instante.'
     };
   }
 
@@ -218,25 +211,21 @@ function indComputeRiskProfile(result) {
   if (ratio < 0.68) {
     return {
       tag: 'Conservador',
-      detail: `Aceptó cuando la oferta llegó al ${pct}% del valor esperado: pagó una prima alta por evitar seguir arriesgando, priorizando la certeza por sobre el monto potencial.`,
-      note
+      detail: `Aceptaste cuando la oferta llegó al ${pct}% del valor esperado: preferiste asegurar una cifra cierta antes que arriesgar.`
     };
   }
   if (ratio < 0.85) {
     return {
       tag: 'Equilibrado',
-      detail: `Aceptó cuando la oferta llegó al ${pct}% del valor esperado: pagó una prima moderada por la certeza, sin apurarse a cerrar ni forzar el límite hasta último momento.`,
-      note
+      detail: `Aceptaste cuando la oferta llegó al ${pct}% del valor esperado: lograste un balance entre prudencia y oportunidad.`
     };
   }
   return {
     tag: 'Buscador de riesgo',
-    detail: `Esperó hasta que la oferta llegó al ${pct}% del valor esperado antes de aceptar: toleró bastante incertidumbre a cambio de acercarse al máximo posible.`,
-    note
+    detail: `Esperaste hasta que la oferta llegó al ${pct}% del valor esperado antes de aceptar: mostraste alta tolerancia a la volatilidad.`
   };
 }
 
-// Generador de objeto JSON para exportación e IA
 function indBuildBehavioralJSON(ind) {
   const history = ind.history || [];
   const totalMs = history.reduce((acc, h) => acc + h.latencyMs, 0);
@@ -383,16 +372,16 @@ function indRenderResult() {
   let title, sub;
 
   if (r.type === 'deal') {
-    title = 'Cerró trato con la banca';
+    title = 'Cerraste trato con la banca';
     const diff = r.playerValue - r.amount;
-    sub = `Su maletín (Nº ${ind.playerCaseId}) tenía ${formatMoney(r.playerValue)}. ` +
-      (diff > 0 ? `Dejó ${formatMoney(diff)} sobre la mesa.` : `Le ganó ${formatMoney(Math.abs(diff))} a la banca.`);
+    sub = `Tu maletín (Nº ${ind.playerCaseId}) tenía ${formatMoney(r.playerValue)}. ` +
+      (diff > 0 ? `Dejaste ${formatMoney(diff)} sobre la mesa.` : `Le ganaste ${formatMoney(Math.abs(diff))} a la banca.`);
   } else if (r.type === 'keep') {
-    title = 'Se quedó con su maletín';
-    sub = r.otherValue != null ? `El otro maletín tenía ${formatMoney(r.otherValue)}.` : 'Llegó al final sin aceptar ninguna oferta.';
+    title = 'Te quedaste con tu maletín';
+    sub = r.otherValue != null ? `El otro maletín tenía ${formatMoney(r.otherValue)}.` : 'Llegaste al final sin aceptar ninguna oferta.';
   } else {
-    title = 'Cambió de maletín';
-    sub = `Su maletín original (Nº ${ind.playerCaseId}) tenía ${formatMoney(r.playerValue)}.`;
+    title = 'Cambiaste de maletín';
+    sub = `Tu maletín original (Nº ${ind.playerCaseId}) tenía ${formatMoney(r.playerValue)}.`;
   }
 
   $('ind-result-title').innerText = `${title} — ${ind.name}`;
@@ -401,24 +390,30 @@ function indRenderResult() {
   const profile = indComputeRiskProfile(r);
   $('ind-risk-tag').innerText = profile.tag;
   $('ind-risk-detail').innerText = profile.detail;
-  $('ind-risk-note').innerText = profile.note;
 
   const totalMs = ind.history.reduce((acc, h) => acc + h.latencyMs, 0);
   const avgMs = ind.history.length ? Math.round(totalMs / ind.history.length) : 0;
 
   $('ind-result-history').innerHTML =
-    `<h3>Decisiones (tiempo total de deliberación: ${(totalMs / 1000).toFixed(1)}s · promedio ${(avgMs / 1000).toFixed(1)}s)</h3>` +
+    `<h3>Decisiones tomadas</h3>` +
     ind.history.map(h => `
       <div class="hist-row">
         <span>Ronda ${h.round}</span>
         <span>VE ${formatMoney(h.ve)}</span>
         <span class="hist-offer">${formatMoney(h.offer)}</span>
-        <span class="hist-dec ${h.decision === 'Trato' ? 'deal' : 'nodeal'}">${h.decision} · ${(h.latencyMs / 1000).toFixed(1)}s</span>
+        <span class="hist-dec ${h.decision === 'Trato' ? 'deal' : 'nodeal'}">${h.decision}</span>
       </div>`).join('');
 
-  // Generar y desplegar el JSON analítico
+  // Generar datos para la vista profesional (oculta por defecto)
   const behavioralData = indBuildBehavioralJSON(ind);
   $('ind-json-output').innerText = JSON.stringify(behavioralData, null, 2);
+
+  $('ind-pro-summary').innerText = 
+    `Evaluado: ${ind.name} | Tiempo total deliberación: ${(totalMs / 1000).toFixed(1)}s (Promedio: ${(avgMs / 1000).toFixed(1)}s por oferta) | Perfil: ${profile.tag}. Nota: Observación de corrida única para uso cualitativo.`;
+
+  // Asegurar que el informe pro inicie oculto
+  $('ind-pro-report').hidden = true;
+  $('ind-toggle-pro-btn').innerText = '👁️ Ver Informe Profesional';
 }
 
 function hideIndOverlays() {
@@ -482,7 +477,7 @@ function grpStart() {
     phase: 'pick',
     roundIndex: 0,
     opensLeft: 0,
-    history: [], // { round, ve, offer, decision, driver, auto }
+    history: [],
     result: null
   };
   grpFillDriverSelects();
@@ -788,10 +783,19 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ---- Individual ----
-  $('ind-start-btn').addEventListener('click', () => indStart($('ind-name-input').value));
-  $('ind-deal-btn').addEventListener('click', () => indDecide('Trato'));$('ind-nodeal-btn').addEventListener('click', () => indDecide('No Trato'));
-  $('ind-keep-btn').addEventListener('click', () => indResolveFinal(false));$('ind-swap-btn').addEventListener('click', () => indResolveFinal(true));
-  $('ind-print-btn').addEventListener('click', () => window.print());$('ind-copy-json-btn').addEventListener('click', () => {
+  $('ind-start-btn').addEventListener('click', () => indStart($('ind-name-input').value));$('ind-deal-btn').addEventListener('click', () => indDecide('Trato'));
+  $('ind-nodeal-btn').addEventListener('click', () => indDecide('No Trato'));$('ind-keep-btn').addEventListener('click', () => indResolveFinal(false));
+  $('ind-swap-btn').addEventListener('click', () => indResolveFinal(true));$('ind-print-btn').addEventListener('click', () => window.print());
+
+  // Toggle de la vista profesional/JSON
+  $('ind-toggle-pro-btn').addEventListener('click', () => {
+    const reportBox = $('ind-pro-report');
+    const isHidden = reportBox.hidden;
+    reportBox.hidden = !isHidden;
+    $('ind-toggle-pro-btn').innerText = isHidden ? '🙈 Ocultar Informe Profesional' : '👁️ Ver Informe Profesional';
+  });
+
+  $('ind-copy-json-btn').addEventListener('click', () => {
     const text = $('ind-json-output').innerText;
     navigator.clipboard.writeText(text).then(() => {
       const btn = $('ind-copy-json-btn');
@@ -799,11 +803,13 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => { btn.innerText = 'Copiar JSON'; }, 2000);
     });
   });
+
   $('ind-again-btn').addEventListener('click', () => {
     hideIndOverlays();
     $('ind-name-input').value = '';
     showScreen('screen-individual-intro');
   });
+
   $('ind-reset-btn').addEventListener('click', () => {
     if (ind && ind.history.length && !window.confirm('Esto reinicia la prueba actual. ¿Continuar?')) return;
     indStart(ind ? ind.name : '');
