@@ -67,6 +67,7 @@ h1 {
   text-transform: uppercase;
   letter-spacing: 2px;
   background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   margin-bottom: 5px;
