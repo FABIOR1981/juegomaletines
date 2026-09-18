@@ -15,7 +15,6 @@ const CONFIG = {
 };
 
 const BANK = { start: 0.60, end: 0.90 };
-
 const FIXED_SEED = 20260918;
 const GROUP_ROUND_SECONDS = 45;
 
@@ -226,49 +225,6 @@ function indComputeRiskProfile(result) {
   };
 }
 
-function indBuildBehavioralJSON(ind) {
-  const history = ind.history || [];
-  const totalMs = history.reduce((acc, h) => acc + h.latencyMs, 0);
-  const avgMs = history.length ? totalMs / history.length : 0;
-
-  const lastHistory = history.length ? history[history.length - 1] : null;
-  const lastRatio = (lastHistory && lastHistory.ve) ? lastHistory.offer / lastHistory.ve : 0;
-
-  let riskCategory = 'MODERATE';
-  if (ind.result.type !== 'deal') {
-    riskCategory = 'RISK_SEEKING';
-  } else if (lastRatio < 0.68) {
-    riskCategory = 'HIGHLY_AVERSE';
-  } else if (lastRatio >= 0.85) {
-    riskCategory = 'RISK_SEEKING';
-  }
-
-  return {
-    player_id: ind.name || "Sin nombre",
-    timestamp: new Date().toISOString(),
-    session_id: "IND_" + Date.now(),
-    risk_metrics: {
-      risk_tolerance_category: riskCategory,
-      risk_attitude_index: Number(lastRatio.toFixed(2)),
-      final_outcome_type: ind.result.type,
-      accepted_offer_amount: ind.result.amount
-    },
-    cognitive_and_decision_style: {
-      decision_speed_profile: avgMs < 3000 ? "FAST_HEURISTIC" : "ANALYTICAL_PAUSED",
-      average_deliberation_seconds: Number((avgMs / 1000).toFixed(2)),
-      total_deliberation_seconds: Number((totalMs / 1000).toFixed(2))
-    },
-    decision_history: history.map(h => ({
-      round: h.round,
-      expected_value: h.ve,
-      offer_amount: h.offer,
-      offer_to_ev_ratio: Number((h.offer / h.ve).toFixed(2)),
-      decision: h.decision,
-      latency_ms: h.latencyMs
-    }))
-  };
-}
-
 function indRenderProReport(ind, profile, totalMs, avgMs) {
   const history = ind.history || [];
   const last = history.length ? history[history.length - 1] : null;
@@ -292,24 +248,24 @@ function indRenderProReport(ind, profile, totalMs, avgMs) {
       <tr style="border-bottom:1px solid rgba(148,163,184,0.1);">
         <td style="padding:6px;">Ronda ${h.round}</td>
         <td style="padding:6px;">${formatMoney(h.ve)}</td>
-        <td style="padding:6px; color:var(--gold);">${formatMoney(h.offer)} (${rPct}%)</td>
-        <td style="padding:6px; font-weight:bold; color:${h.decision === 'Trato' ? 'var(--green)' : 'var(--red-val)'};">${h.decision}</td>
+        <td style="padding:6px;">${formatMoney(h.offer)} (${rPct}%)</td>
+        <td style="padding:6px; font-weight:bold;">${h.decision}</td>
         <td style="padding:6px;">${(h.latencyMs / 1000).toFixed(1)}s</td>
       </tr>
     `;
   }).join('');
 
   const html = `
-    <div style="font-size:0.85rem; color:#cbd5e1; display:flex; flex-direction:column; gap:10px;">
+    <div style="font-size:0.85rem; display:flex; flex-direction:column; gap:10px;">
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;">
         <div><strong>Participante:</strong> ${ind.name || 'Sin especificar'}</div>
         <div><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-ES')}</div>
-        <div><strong>Perfil de Riesgo:</strong> <span style="color:var(--gold); font-weight:bold;">${profile.tag}</span></div>
+        <div><strong>Perfil de Riesgo:</strong> <span>${profile.tag}</span></div>
         <div><strong>Estilo de Decisión:</strong> ${speedStyle}</div>
       </div>
 
       <div style="background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;">
-        <strong style="color:#f8fafc; display:block; margin-bottom:4px;">Resumen Ejecutivo:</strong>
+        <strong style="display:block; margin-bottom:4px;">Resumen Ejecutivo:</strong>
         <ul style="margin-left:18px; margin-bottom:0; line-height:1.4;">
           <li><strong>Resultado Final:</strong> ${outcomeText}.</li>
           <li><strong>Tiempo Total de Deliberación:</strong> ${(totalMs / 1000).toFixed(1)} segundos (Promedio de ${(avgMs / 1000).toFixed(1)}s por oferta).</li>
@@ -318,10 +274,10 @@ function indRenderProReport(ind, profile, totalMs, avgMs) {
       </div>
 
       <div style="margin-top:6px;">
-        <strong style="color:#f8fafc; display:block; margin-bottom:6px;">Matriz Cuantitativa de Ofertas y Tiempos:</strong>
+        <strong style="display:block; margin-bottom:6px;">Matriz Cuantitativa de Ofertas y Tiempos:</strong>
         <table style="width:100%; border-collapse:collapse; text-align:left; font-size:0.8rem; background:rgba(0,0,0,0.2); border-radius:8px; overflow:hidden;">
           <thead>
-            <tr style="background:rgba(148,163,184,0.1); color:#94a3b8; font-family:Orbitron,sans-serif; font-size:0.68rem; text-transform:uppercase;">
+            <tr style="background:rgba(148,163,184,0.1); font-family:Orbitron,sans-serif; font-size:0.68rem; text-transform:uppercase;">
               <th style="padding:6px;">Ronda</th>
               <th style="padding:6px;">VE</th>
               <th style="padding:6px;">Oferta (% VE)</th>
@@ -475,14 +431,10 @@ function indRenderResult() {
         <span class="hist-dec ${h.decision === 'Trato' ? 'deal' : 'nodeal'}">${h.decision}</span>
       </div>`).join('');
 
-  // Generar reporte profesional en HTML
+  // Generar reporte profesional
   indRenderProReport(ind, profile, totalMs, avgMs);
 
-  // Almacenar el objeto JSON en el botón para exportación bajo demanda
-  const behavioralData = indBuildBehavioralJSON(ind);
-  $('ind-copy-json-btn').dataset.json = JSON.stringify(behavioralData, null, 2);
-
-  // Asegurar estado oculto por defecto
+  // Estado inicial
   $('ind-pro-report').hidden = true;
   $('ind-toggle-pro-btn').innerText = '👁️ Ver Informe Profesional';
 }
@@ -854,9 +806,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ---- Individual ----
-  $('ind-start-btn').addEventListener('click', () => indStart($('ind-name-input').value));$('ind-deal-btn').addEventListener('click', () => indDecide('Trato'));
-  $('ind-nodeal-btn').addEventListener('click', () => indDecide('No Trato'));$('ind-keep-btn').addEventListener('click', () => indResolveFinal(false));
-  $('ind-swap-btn').addEventListener('click', () => indResolveFinal(true));$('ind-print-btn').addEventListener('click', () => window.print());
+  $('ind-start-btn').addEventListener('click', () => indStart($('ind-name-input').value));
+  $('ind-deal-btn').addEventListener('click', () => indDecide('Trato'));$('ind-nodeal-btn').addEventListener('click', () => indDecide('No Trato'));
+  $('ind-keep-btn').addEventListener('click', () => indResolveFinal(false));$('ind-swap-btn').addEventListener('click', () => indResolveFinal(true));
 
   // Toggle de la vista profesional
   $('ind-toggle-pro-btn').addEventListener('click', () => {
@@ -866,14 +818,11 @@ document.addEventListener('DOMContentLoaded', () => {
     $('ind-toggle-pro-btn').innerText = isHidden ? '🙈 Ocultar Informe Profesional' : '👁️ Ver Informe Profesional';
   });
 
-  // Botón para copiar JSON técnico
-  $('ind-copy-json-btn').addEventListener('click', () => {
-    const text = $('ind-copy-json-btn').dataset.json || '';
-    navigator.clipboard.writeText(text).then(() => {
-      const btn = $('ind-copy-json-btn');
-      btn.innerText = '¡JSON Copiado!';
-      setTimeout(() => { btn.innerText = 'Copiar JSON Técnico'; }, 2000);
-    });
+  // Impresión exclusiva del informe profesional
+  $('ind-print-pro-btn').addEventListener('click', () => {
+    document.body.classList.add('printing-pro-report');
+    window.print();
+    document.body.classList.remove('printing-pro-report');
   });
 
   $('ind-again-btn').addEventListener('click', () => {

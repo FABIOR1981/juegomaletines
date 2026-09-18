@@ -126,32 +126,32 @@
   <!-- Overlay resultado individual -->
   <div class="overlay" id="ind-result-overlay" hidden>
     <div class="panel wide">
-      <h2 id="ind-result-title">Fin de la prueba</h2>
-      <div class="big-amount" id="ind-result-amount">$0</div>
-      <p class="panel-sub" id="ind-result-sub"></p>
       
-      <!-- Vista limpia para el participante -->
-      <div class="risk-profile" id="ind-risk-profile">
-        <span class="risk-tag" id="ind-risk-tag">-</span>
-        <p id="ind-risk-detail"></p>
+      <!-- Bloque para el jugador -->
+      <div id="player-view-block">
+        <h2 id="ind-result-title">Fin de la prueba</h2>
+        <div class="big-amount" id="ind-result-amount">$0</div>
+        <p class="panel-sub" id="ind-result-sub"></p>
+        
+        <div class="risk-profile" id="ind-risk-profile">
+          <span class="risk-tag" id="ind-risk-tag">-</span>
+          <p id="ind-risk-detail"></p>
+        </div>
+
+        <div class="result-history" id="ind-result-history"></div>
       </div>
 
-      <div class="result-history" id="ind-result-history"></div>
-
-      <!-- Sección del Informe Técnico de Evaluación Conductual -->
-      <div id="ind-pro-report" hidden style="margin-top:18px; padding:16px; background:rgba(15, 23, 42, 0.85); border:1px solid rgba(255, 215, 0, 0.3); border-radius:12px; text-align:left;">
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,215,0,0.2); padding-bottom:8px; margin-bottom:12px;">
-          <h3 style="font-family:Orbitron,sans-serif; font-size:0.82rem; color:var(--gold); text-transform:uppercase; letter-spacing:1px; margin:0;">
-            📋 Informe Técnico de Evaluación Conductual
-          </h3>
-          <button class="btn btn-ghost" id="ind-copy-json-btn" style="padding:3px 8px; font-size:0.65rem;">Copiar JSON Técnico</button>
+      <!-- Sección del Informe Técnico (Oculto por defecto, scrolleable) -->
+      <div id="ind-pro-report" class="pro-report-container" hidden>
+        <div class="pro-report-header">
+          <h3>📋 Informe Técnico de Evaluación Conductual</h3>
+          <button class="btn btn-ghost" id="ind-print-pro-btn" style="padding:4px 12px; font-size:0.75rem;">🖨️ Imprimir Informe</button>
         </div>
-        <div id="ind-pro-report-content"></div>
+        <div id="ind-pro-report-content" class="pro-report-body"></div>
       </div>
 
       <div class="panel-actions" style="margin-top:20px;">
         <button class="btn btn-ghost" id="ind-toggle-pro-btn">👁️ Ver Informe Profesional</button>
-        <button class="btn btn-ghost" id="ind-print-btn">Imprimir</button>
         <button class="btn btn-deal" id="ind-again-btn">Nueva prueba</button>
       </div>
     </div>
