@@ -582,6 +582,15 @@ h2 { font-family: 'Orbitron', sans-serif; font-size: 1.1rem; color: #e2e8f0; }
 
 .risk-profile p { font-size: 0.88rem; color: #cbd5e1; line-height: 1.4; }
 
+.risk-note {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(148, 163, 184, 0.25);
+  font-size: 0.78rem !important;
+  color: #64748b !important;
+  font-style: italic;
+}
+
 .participation-list { margin-bottom: 18px; text-align: left; }
 
 .participation-row {
@@ -643,6 +652,7 @@ h2 { font-family: 'Orbitron', sans-serif; font-size: 1.1rem; color: #e2e8f0; }
   .overlay { position: static; background: none; backdrop-filter: none; }
   .panel { box-shadow: none; border: 1px solid #ccc; color: #111; background: #fff; }
   .big-amount, h1, h2, .metric-card .value { color: #111 !important; -webkit-text-fill-color: #111 !important; text-shadow: none !important; }
+  .risk-note { color: #444 !important; }
 }
 
 @media (max-width: 900px) {

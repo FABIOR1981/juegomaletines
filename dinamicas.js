@@ -202,15 +202,39 @@ function indResolveFinal(didSwap) {
 }
 
 function indComputeRiskProfile(result) {
+  const note = 'Es una observación de esta única corrida, no una medida validada de personalidad ni de tolerancia al riesgo: sirve como disparador de conversación, no como puntaje diagnóstico.';
+
   if (result.type !== 'deal') {
-    return { tag: 'Buscador de riesgo', detail: 'Llegó hasta el final sin aceptar ninguna oferta de la banca.' };
+    return {
+      tag: 'Buscador de riesgo',
+      detail: 'Llegó hasta el final sin aceptar ninguna oferta de la banca: prefirió quedarse con la incertidumbre completa antes que cerrar por un monto ya conocido.',
+      note
+    };
   }
+
   const last = ind.history[ind.history.length - 1];
   const ratio = last && last.ve ? last.offer / last.ve : 0;
   const pct = Math.round(ratio * 100);
-  if (ratio < 0.68) return { tag: 'Conservador', detail: `Aceptó apenas la oferta llegó al ${pct}% del valor esperado.` };
-  if (ratio < 0.85) return { tag: 'Equilibrado', detail: `Aceptó con una oferta del ${pct}% del valor esperado.` };
-  return { tag: 'Buscador de riesgo', detail: `Esperó hasta que la oferta llegó al ${pct}% del valor esperado.` };
+
+  if (ratio < 0.68) {
+    return {
+      tag: 'Conservador',
+      detail: `Aceptó cuando la oferta llegó al ${pct}% del valor esperado: pagó una prima alta por evitar seguir arriesgando, priorizando la certeza por sobre el monto potencial.`,
+      note
+    };
+  }
+  if (ratio < 0.85) {
+    return {
+      tag: 'Equilibrado',
+      detail: `Aceptó cuando la oferta llegó al ${pct}% del valor esperado: pagó una prima moderada por la certeza, sin apurarse a cerrar ni forzar el límite hasta último momento.`,
+      note
+    };
+  }
+  return {
+    tag: 'Buscador de riesgo',
+    detail: `Esperó hasta que la oferta llegó al ${pct}% del valor esperado antes de aceptar: toleró bastante incertidumbre a cambio de acercarse al máximo posible.`,
+    note
+  };
 }
 
 function indFinish(result) {
@@ -336,6 +360,7 @@ function indRenderResult() {
   const profile = indComputeRiskProfile(r);
   $('ind-risk-tag').innerText = profile.tag;
   $('ind-risk-detail').innerText = profile.detail;
+  $('ind-risk-note').innerText = profile.note;
 
   const totalMs = ind.history.reduce((acc, h) => acc + h.latencyMs, 0);
   const avgMs = ind.history.length ? Math.round(totalMs / ind.history.length) : 0;
