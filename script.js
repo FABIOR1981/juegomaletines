@@ -39,13 +39,209 @@ let modes = {
   perfil: false
 };
 
-// Modo visual "TV": puramente estético, no cambia ninguna regla del juego.
-// No se bloquea con setModePanelLocked porque no afecta la partida.
-let tvMode = false;
+// Modo de la app: 'basico' | 'tv' | 'seguimiento'.
+// 'tv' es puramente estético (no cambia reglas). 'seguimiento' cambia el
+// modelo de datos entero: no hay mezcla aleatoria, el usuario va anotando
+// a mano qué premio salió de cada maletín mientras mira el programa real.
+let appMode = 'basico';
+
+function visualTv() {
+  return appMode === 'tv' || appMode === 'seguimiento';
+}
+
+function isSeguimiento() {
+  return appMode === 'seguimiento';
+}
 
 // Guarda el último maletín abierto para dispararle el destello dorado una
-// sola vez, en el próximo renderBoard, si el modo TV está activo.
+// sola vez, en el próximo render, si el modo visual TV está activo.
 let pendingFlash = null; // { id, big }
+
+/* ------------------------------------------------------------------------
+   MODO SEGUIMIENTO — mismo set de 26 premios que el juego, pero sin mezcla:
+   el usuario arma un maletín (lo toca) y después toca el valor que anunció
+   el programa para asignárselo. El "VE" y la "oferta estimada" se recalculan
+   sobre lo que queda en el pool real, igual que en el juego clásico.
+   ------------------------------------------------------------------------ */
+
+function createEmptyTracker() {
+  return {
+    cases: CONFIG.values.map((_, i) => ({ id: i + 1, value: null, opened: false, isPlayer: false })),
+    usedValues: new Set(),
+    armedCaseId: null,
+    markingPlayer: false,
+    playerCaseId: null,
+    log: [] // { kind: 'apertura'|'oferta', seq, caseId?, value?, amount?, ve, modelEstimate? }
+  };
+}
+
+let tracker = createEmptyTracker();
+
+function trackerRemainingValues() {
+  return CONFIG.values.filter(v => !tracker.usedValues.has(v));
+}
+
+function trackerExpectedValue() {
+  const vals = trackerRemainingValues();
+  if (!vals.length) return 0;
+  return vals.reduce((a, b) => a + b, 0) / vals.length;
+}
+
+function trackerBankOffer() {
+  const total = CONFIG.values.length;
+  const opened = tracker.usedValues.size;
+  const progress = opened / (total - 2 || 1);
+  const preset = BANK_PRESETS[modes.bank] || BANK_PRESETS.normal;
+  const factor = preset.start + Math.min(progress, 1) * (preset.end - preset.start);
+  return trackerExpectedValue() * factor;
+}
+
+function resetTracker(skipConfirm) {
+  const hasProgress = tracker.usedValues.size > 0 || tracker.log.length > 0 || tracker.playerCaseId != null;
+  if (hasProgress && !skipConfirm) {
+    if (!window.confirm('Esto borra el seguimiento actual. ¿Continuar?')) return;
+  }
+  tracker = createEmptyTracker();
+  setModePanelLocked(false);
+  hideAllOverlays();
+  renderAll();
+}
+
+function armCase(id) {
+  const c = tracker.cases.find(item => item.id === id);
+  if (!c) return;
+
+  if (tracker.markingPlayer) {
+    tracker.cases.forEach(item => { item.isPlayer = false; });
+    c.isPlayer = true;
+    tracker.playerCaseId = id;
+    tracker.markingPlayer = false;
+    $('seg-mark-player-btn').classList.remove('active');
+    renderAll();
+    return;
+  }
+
+  if (c.opened) return;
+  tracker.armedCaseId = (tracker.armedCaseId === id) ? null : id;
+  renderAll();
+}
+
+function assignValue(value) {
+  if (tracker.armedCaseId == null || tracker.usedValues.has(value)) return;
+
+  const c = tracker.cases.find(item => item.id === tracker.armedCaseId);
+  if (!c || c.opened) return;
+
+  c.value = value;
+  c.opened = true;
+  tracker.usedValues.add(value);
+  tracker.log.push({
+    kind: 'apertura',
+    seq: tracker.log.length + 1,
+    caseId: c.id,
+    value,
+    ve: Math.round(trackerExpectedValue())
+  });
+  tracker.armedCaseId = null;
+  pendingFlash = visualTv() ? { id: c.id, big: value >= 100000 } : null;
+  renderAll();
+}
+
+function undoLastTrackerAction() {
+  const last = tracker.log.pop();
+  if (!last) return;
+
+  if (last.kind === 'apertura') {
+    const c = tracker.cases.find(item => item.id === last.caseId);
+    if (c) { c.value = null; c.opened = false; }
+    tracker.usedValues.delete(last.value);
+  }
+  renderAll();
+}
+
+function registerRealOffer(amount) {
+  if (!amount || amount <= 0) return;
+  tracker.log.push({
+    kind: 'oferta',
+    seq: tracker.log.length + 1,
+    amount: Math.round(amount),
+    ve: Math.round(trackerExpectedValue()),
+    modelEstimate: Math.round(trackerBankOffer())
+  });
+  renderAll();
+}
+
+function finishTracking() {
+  hideAllOverlays();
+
+  const playerC = tracker.cases.find(c => c.isPlayer);
+  const revealed = playerC && playerC.opened;
+
+  $('result-title').innerText = 'Resumen del seguimiento';
+  $('result-amount').innerText = revealed ? formatMoney(playerC.value) : '—';
+  $('result-sub').innerText = revealed
+    ? `El maletín del participante (Nº ${playerC.id}) terminó revelado con ${formatMoney(playerC.value)}.`
+    : playerC
+      ? `El maletín del participante (Nº ${playerC.id}) quedó sin revelar.`
+      : 'No se marcó el maletín del participante.';
+  $('risk-profile').hidden = true;
+  $('play-again-btn').innerText = 'Cerrar resumen';
+
+  const hist = $('result-history');
+  const offers = tracker.log.filter(l => l.kind === 'oferta');
+
+  if (!offers.length) {
+    hist.innerHTML = '<h3>Ofertas reales registradas</h3>' +
+      '<p style="color:#94a3b8;font-size:0.9rem;">No se registró ninguna oferta de la banca.</p>';
+  } else {
+    hist.innerHTML =
+      '<h3>Ofertas reales vs. modelo</h3>' +
+      offers.map(o => {
+        const diff = o.amount - o.modelEstimate;
+        const sign = diff >= 0 ? '+' : '-';
+        return `
+        <div class="hist-row">
+          <span>Real ${formatMoney(o.amount)}</span>
+          <span>VE ${formatMoney(o.ve)}</span>
+          <span class="hist-offer">Modelo ${formatMoney(o.modelEstimate)}</span>
+          <span class="hist-dec ${diff >= 0 ? 'deal' : 'nodeal'}">${sign}${formatMoney(Math.abs(diff))}</span>
+        </div>`;
+      }).join('');
+  }
+
+  $('result-overlay').hidden = false;
+}
+
+function setAppMode(newMode) {
+  if (newMode === appMode) return;
+
+  const classicProgress = state.playerCaseId != null || state.history.length > 0;
+  const trackerProgress = tracker.usedValues.size > 0 || tracker.log.length > 0 || tracker.playerCaseId != null;
+  const hasProgress = isSeguimiento() ? trackerProgress : classicProgress;
+
+  if (hasProgress && !window.confirm('Cambiar de modo reinicia lo que llevás hecho hasta ahora. ¿Continuar?')) {
+    return;
+  }
+
+  appMode = newMode;
+
+  document.querySelectorAll('#app-mode-segmented .seg-btn')
+    .forEach(b => b.classList.toggle('active', b.dataset.value === newMode));
+
+  document.body.classList.toggle('theme-tv', visualTv());
+  $('seg-toolbar').hidden = !isSeguimiento();
+
+  if (isSeguimiento()) {
+    $('round-card-label').innerText = 'Abiertos';
+    $('reset-btn').innerText = 'Reiniciar Seguimiento';
+    resetTracker(true);
+  } else {
+    $('round-card-label').innerText = 'Ronda';
+    $('reset-btn').innerText = 'Reiniciar Juego';
+    $('seg-log').hidden = true;
+    initGame();
+  }
+}
 
 /* ----------------------------- Estado ----------------------------------- */
 
@@ -130,19 +326,26 @@ function bankOffer() {
 
 /* --------------------- Estadísticas modo educativo ----------------------- */
 
-function stdDeviation() {
-  const vals = remainingValues();
+function stdDeviationOf(vals) {
   if (!vals.length) return 0;
-  const mean = expectedValue();
+  const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
   const variance = vals.reduce((acc, v) => acc + (v - mean) ** 2, 0) / vals.length;
   return Math.sqrt(variance);
 }
 
+function medianOf(vals) {
+  const sorted = [...vals].sort((a, b) => a - b);
+  if (!sorted.length) return 0;
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+function stdDeviation() {
+  return stdDeviationOf(remainingValues());
+}
+
 function median() {
-  const vals = [...remainingValues()].sort((a, b) => a - b);
-  if (!vals.length) return 0;
-  const mid = Math.floor(vals.length / 2);
-  return vals.length % 2 ? vals[mid] : (vals[mid - 1] + vals[mid]) / 2;
+  return medianOf(remainingValues());
 }
 
 /* ------------------------ Perfil de riesgo -------------------------------- */
@@ -257,7 +460,7 @@ function openCase(id) {
 
   c.opened = true;
   state.opensLeftInRound--;
-  pendingFlash = tvMode ? { id: c.id, big: c.value >= 100000 } : null;
+  pendingFlash = visualTv() ? { id: c.id, big: c.value >= 100000 } : null;
 
   // Se corta la interacción antes de mostrar la oferta para que no se
   // abran maletines de más durante la pausa.
@@ -287,7 +490,7 @@ function startOfferPhase() {
   $('offer-overlay').hidden = false;
   renderStatus();
 
-  if (tvMode) {
+  if (visualTv()) {
     $('offer-thinking').hidden = false;
     $('offer-amount').style.visibility = 'hidden';
     $('offer-sub').style.visibility = 'hidden';
@@ -390,16 +593,25 @@ function finish(result) {
   renderMetrics();
   renderResult();
 
+  $('play-again-btn').innerText = 'Jugar de nuevo';
   $('result-overlay').hidden = false;
 }
 
 /* ----------------------------- Render ------------------------------------ */
 
 function renderAll() {
-  renderBoard();
-  renderMetrics();
-  renderStatus();
-  renderPlayerBar();
+  if (isSeguimiento()) {
+    renderTrackerBoard();
+    renderTrackerMetrics();
+    renderTrackerStatus();
+    renderTrackerPlayerBar();
+    renderSegLog();
+  } else {
+    renderBoard();
+    renderMetrics();
+    renderStatus();
+    renderPlayerBar();
+  }
 }
 
 function renderBoard() {
@@ -482,15 +694,14 @@ function renderMetrics() {
   $('ve-val').innerText = formatMoney(expectedValue());
   $('bank-offer').innerText = state.phase === PHASE.PICK ? '—' : formatMoney(bankOffer());
 
-  renderEduRow();
+  renderEduRow(remainingValues());
 }
 
-function renderEduRow() {
+function renderEduRow(vals) {
   const row = $('edu-row');
   row.hidden = !modes.educativo;
   if (!modes.educativo) return;
 
-  const vals = remainingValues();
   if (!vals.length) {
     $('edu-std').innerText = '$0';
     $('edu-median').innerText = '$0';
@@ -499,8 +710,8 @@ function renderEduRow() {
     return;
   }
 
-  $('edu-std').innerText = formatMoney(stdDeviation());
-  $('edu-median').innerText = formatMoney(median());
+  $('edu-std').innerText = formatMoney(stdDeviationOf(vals));
+  $('edu-median').innerText = formatMoney(medianOf(vals));
   $('edu-min').innerText = formatMoney(Math.min(...vals));
   $('edu-max').innerText = formatMoney(Math.max(...vals));
 }
@@ -608,6 +819,144 @@ function renderResult() {
       </div>`).join('');
 }
 
+/* --------------------------- Render: seguimiento -------------------------- */
+
+function renderTrackerBoard() {
+  const lowList = $('low-values-list');
+  const highList = $('high-values-list');
+  lowList.innerHTML = '';
+  highList.innerHTML = '';
+
+  const half = Math.ceil(CONFIG.values.length / 2);
+  const pickMode = tracker.armedCaseId != null;
+
+  const makeBadge = (val, cls) => {
+    const badge = document.createElement('div');
+    const isUsed = tracker.usedValues.has(val);
+    const classes = ['value-badge', cls];
+    if (isUsed) classes.push('eliminated');
+    if (pickMode && !isUsed) classes.push('pickable');
+    badge.className = classes.join(' ');
+    badge.innerText = formatMoney(val);
+
+    if (pickMode && !isUsed) {
+      badge.addEventListener('click', () => assignValue(val));
+    }
+    return badge;
+  };
+
+  CONFIG.values.slice(0, half).forEach(v => lowList.appendChild(makeBadge(v, 'low')));
+  CONFIG.values.slice(half).forEach(v => highList.appendChild(makeBadge(v, 'high')));
+
+  const grid = $('cases-grid');
+  grid.innerHTML = '';
+  const flash = pendingFlash;
+
+  tracker.cases.forEach(c => {
+    const el = document.createElement('div');
+    const classes = ['case'];
+    if (c.opened) classes.push('opened');
+    if (c.isPlayer) classes.push('player');
+    if (tracker.armedCaseId === c.id) classes.push('armed-seg');
+    if (tracker.markingPlayer && !c.opened) classes.push('selectable');
+    if (flash && flash.id === c.id) classes.push('just-opened-tv');
+    el.className = classes.join(' ');
+
+    el.innerHTML = `
+      <div class="handle"></div>
+      <div class="num">${c.id}</div>
+      <div class="val-hidden">${c.opened ? formatMoney(c.value) : ''}</div>
+      ${c.isPlayer ? '<div class="mine-tag">TUYO</div>' : ''}
+    `;
+
+    el.addEventListener('click', () => armCase(c.id));
+    grid.appendChild(el);
+  });
+
+  if (flash) {
+    if (flash.big) {
+      grid.classList.add('big-hit-tv');
+      setTimeout(() => grid.classList.remove('big-hit-tv'), 700);
+    }
+    pendingFlash = null;
+  }
+}
+
+function renderTrackerMetrics() {
+  const vals = trackerRemainingValues();
+  $('remaining-count').innerText = vals.length;
+  $('round-label').innerText = tracker.usedValues.size;
+
+  if (!vals.length) {
+    $('ve-val').innerText = '$0';
+    $('bank-offer').innerText = '$0';
+  } else {
+    $('ve-val').innerText = formatMoney(trackerExpectedValue());
+    $('bank-offer').innerText = formatMoney(trackerBankOffer());
+  }
+
+  renderEduRow(vals);
+}
+
+function renderTrackerStatus() {
+  let text;
+  if (tracker.markingPlayer) {
+    text = 'Tocá el maletín del participante en el tablero.';
+  } else if (tracker.armedCaseId != null) {
+    text = `Maletín Nº ${tracker.armedCaseId} armado: tocá el valor que salió al aire.`;
+  } else {
+    text = 'Tocá un maletín y después el valor que anunciaron en el programa.';
+  }
+  setStatus(text);
+}
+
+function renderTrackerPlayerBar() {
+  const bar = $('player-case-bar');
+  if (tracker.playerCaseId == null) {
+    bar.hidden = true;
+    return;
+  }
+  const c = tracker.cases.find(item => item.id === tracker.playerCaseId);
+  bar.hidden = false;
+  $('player-case-num').innerText = 'Nº ' + tracker.playerCaseId;
+  $('player-case-hint').innerText = (c && c.opened)
+    ? `revelado: ${formatMoney(c.value)}`
+    : 'aún sin revelar';
+}
+
+function renderSegLog() {
+  const panel = $('seg-log');
+  const body = $('seg-log-body');
+
+  if (!tracker.log.length) {
+    panel.hidden = true;
+    body.innerHTML = '';
+    return;
+  }
+
+  panel.hidden = false;
+  body.innerHTML = tracker.log.map(entry => {
+    if (entry.kind === 'apertura') {
+      return `
+        <div class="hist-row">
+          <span>#${entry.seq}</span>
+          <span>Maletín Nº ${entry.caseId}</span>
+          <span class="hist-offer">${formatMoney(entry.value)}</span>
+          <span>VE ${formatMoney(entry.ve)}</span>
+        </div>`;
+    }
+    const diff = entry.amount - entry.modelEstimate;
+    const sign = diff >= 0 ? '+' : '-';
+    return `
+      <div class="hist-row">
+        <span>#${entry.seq}</span>
+        <span>Oferta real ${formatMoney(entry.amount)}</span>
+        <span class="hist-offer">Modelo ${formatMoney(entry.modelEstimate)}</span>
+        <span class="hist-dec ${diff >= 0 ? 'deal' : 'nodeal'}">${sign}${formatMoney(Math.abs(diff))}</span>
+      </div>`;
+  }).join('');
+}
+
 function setModePanelLocked(locked) {
   const panel = $('mode-panel');
   panel.classList.toggle('locked', locked);
@@ -628,8 +977,19 @@ function hideAllOverlays() {
 /* ----------------------------- Eventos ----------------------------------- */
 
 document.addEventListener('DOMContentLoaded', () => {
-  $('reset-btn').addEventListener('click', initGame);
-  $('play-again-btn').addEventListener('click', initGame);
+  $('reset-btn').addEventListener('click', () => {
+    if (isSeguimiento()) resetTracker();
+    else initGame();
+  });
+
+  $('play-again-btn').addEventListener('click', () => {
+    if (isSeguimiento()) {
+      $('result-overlay').hidden = true; // cierra el resumen, no borra lo registrado
+    } else {
+      initGame();
+    }
+  });
+
   $('deal-btn').addEventListener('click', acceptOffer);
   $('nodeal-btn').addEventListener('click', rejectOffer);
   $('keep-btn').addEventListener('click', () => resolveFinal(false));
@@ -642,23 +1002,48 @@ document.addEventListener('DOMContentLoaded', () => {
       modes.bank = btn.dataset.value;
       document.querySelectorAll('#bank-segmented .seg-btn')
         .forEach(b => b.classList.toggle('active', b === btn));
-      renderMetrics();
+      if (isSeguimiento()) renderTrackerMetrics();
+      else renderMetrics();
     });
   });
 
   // Switches de modo educativo y perfil de riesgo
   $('toggle-educativo').addEventListener('change', (e) => {
     modes.educativo = e.target.checked;
-    renderEduRow();
+    if (isSeguimiento()) renderEduRow(trackerRemainingValues());
+    else renderEduRow(remainingValues());
   });
   $('toggle-perfil').addEventListener('change', (e) => {
     modes.perfil = e.target.checked;
   });
 
-  $('toggle-tv').addEventListener('change', (e) => {
-    tvMode = e.target.checked;
-    document.body.classList.toggle('theme-tv', tvMode);
+  // Selector de Modo (Básico / TV / Seguimiento)
+  document.querySelectorAll('#app-mode-segmented .seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => setAppMode(btn.dataset.value));
   });
+
+  // Toolbar de seguimiento
+  $('seg-mark-player-btn').addEventListener('click', () => {
+    tracker.markingPlayer = !tracker.markingPlayer;
+    tracker.armedCaseId = null;
+    $('seg-mark-player-btn').classList.toggle('active', tracker.markingPlayer);
+    renderAll();
+  });
+
+  $('seg-register-offer-btn').addEventListener('click', () => {
+    const input = $('seg-real-offer-input');
+    const amount = parseFloat(input.value);
+    if (!amount || amount <= 0) return;
+    registerRealOffer(amount);
+    input.value = '';
+  });
+
+  $('seg-real-offer-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') $('seg-register-offer-btn').click();
+  });
+
+  $('seg-undo-btn').addEventListener('click', undoLastTrackerAction);
+  $('seg-finish-btn').addEventListener('click', finishTracking);
 
   initGame();
 });

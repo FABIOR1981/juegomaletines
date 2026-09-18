@@ -19,13 +19,12 @@
   </div>
 
   <div class="tv-toggle-fab">
-    <label class="switch-row">
-      <span class="switch-label">Modo TV</span>
-      <span class="switch">
-        <input type="checkbox" id="toggle-tv">
-        <span class="slider"></span>
-      </span>
-    </label>
+    <span class="mode-group-label">Modo</span>
+    <div class="segmented" id="app-mode-segmented">
+      <button type="button" class="seg-btn active" data-value="basico">Básico</button>
+      <button type="button" class="seg-btn" data-value="tv">TV</button>
+      <button type="button" class="seg-btn" data-value="seguimiento">Seguimiento</button>
+    </div>
   </div>
 
   <div class="page-layout">
@@ -65,7 +64,7 @@
 
       <div class="dashboard">
         <div class="metric-card">
-          <h3>Ronda</h3>
+          <h3 id="round-card-label">Ronda</h3>
           <div class="value" id="round-label">-</div>
         </div>
         <div class="metric-card">
@@ -90,10 +89,25 @@
         <span class="hint" id="player-case-hint">queda cerrado hasta el final</span>
       </div>
 
+      <div class="seg-toolbar" id="seg-toolbar" hidden>
+        <button type="button" class="btn btn-sm btn-keep" id="seg-mark-player-btn">Marcar maletín del participante</button>
+        <div class="seg-offer-input">
+          <input type="number" inputmode="numeric" id="seg-real-offer-input" placeholder="Oferta real ($)">
+          <button type="button" class="btn btn-sm btn-deal" id="seg-register-offer-btn">Registrar oferta</button>
+        </div>
+        <button type="button" class="btn btn-sm btn-nodeal" id="seg-undo-btn">Deshacer</button>
+        <button type="button" class="btn btn-sm btn-swap" id="seg-finish-btn">Finalizar seguimiento</button>
+      </div>
+
       <div class="main-container">
         <div class="values-column" id="low-values-list"></div>
         <div class="cases-grid" id="cases-grid"></div>
         <div class="values-column" id="high-values-list"></div>
+      </div>
+
+      <div class="result-history seg-log" id="seg-log" hidden>
+        <h3>Registro del seguimiento</h3>
+        <div id="seg-log-body"></div>
       </div>
 
       <div class="controls">
