@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Dinámicas — Archivo corregido y refactorizado para control estricto de estado
+   Dinámicas — Archivo independiente para el juego de maletines
    ========================================================================== */
 
 const CONFIG = {
