@@ -30,7 +30,7 @@ Ejercicios individuales y grupales basados en el mismo modelo:
 2. En las dinámicas, iniciá la prueba y seguí las decisiones de la persona o del grupo.
 3. Al final, abrí el informe con **Ver Informe Profesional** e imprimilo si hace falta.
 
-En `documentacion/presentacion.pdf` hay una presentación del proyecto.
+En [documentacion-central](https://github.com/FABIOR1981/documentacion-central/tree/main/juegomaletines/documentacion) están el manual de usuario ([PDF](https://github.com/FABIOR1981/documentacion-central/blob/main/juegomaletines/documentacion/MANUAL_USUARIO.pdf)) y una [presentación del proyecto](https://github.com/FABIOR1981/documentacion-central/blob/main/juegomaletines/documentacion/presentacion.pdf). También se pueden consultar desde la bitácora de proyectos.
 
 ## Ejecutar localmente
 
@@ -43,5 +43,5 @@ index.html                    Menú de inicio
 juego.html / script.js        Partida clásica
 dinamicas.html / dinamicas.js Dinámicas e informes
 styles.css / dinamicas.css    Estilos
-documentacion/                Presentación en PDF
+documentacion/                Aviso: la documentación está en documentacion-central
 ```
