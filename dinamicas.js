@@ -73,6 +73,23 @@ function showScreen(id) {
 }
 
 /* ============================================================================
+   DETECCIÓN DE PARÁMETROS URL (MODO CLÍNICO / PSICOMÉTRICO AUTOMÁTICO)
+   ============================================================================ */
+
+function checkUrlParams() {
+  const params = new URLSearchParams(window.location.search);
+  const isPsico = params.get('psico') === 'true' || params.get('modo') === 'clinico' || params.get('abstract') === 'true';
+  
+  if (isPsico) {
+    const indCheck = $('ind-abstract-mode');
+    const grpCheck = $('grp-abstract-mode');
+    if (indCheck) indCheck.checked = true;
+    if (grpCheck) grpCheck.checked = true;
+    document.title = "Evaluación Psicométrica de Toma de Decisiones";
+  }
+}
+
+/* ============================================================================
    DINÁMICA INDIVIDUAL (PSICOMÉTRICA / ABSTRACTA)
    ============================================================================ */
 
@@ -872,6 +889,8 @@ function hideGrpOverlays() {
 /* ----------------------------- Eventos globales --------------------------- */
 
 document.addEventListener('DOMContentLoaded', () => {
+  checkUrlParams(); // Activa automáticamente el modo psicométrico si viene por URL (ej: ?psico=true)
+
   document.querySelectorAll('.dyn-card[data-target]').forEach(card => {
     card.addEventListener('click', () => {
       const target = card.dataset.target;
