@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Dinámicas — Archivo independiente para el juego de maletines
+   Dinámicas — Archivo independiente para el juego de maletines y evaluación psicométrica
    ========================================================================== */
 
 const CONFIG = {
@@ -17,8 +17,12 @@ const GROUP_ROUND_SECONDS = 45;
 
 const $ = (id) => document.getElementById(id);
 
-function formatMoney(amount) {
-  return '$' + Math.round(amount).toLocaleString(CONFIG.locale);
+function formatValue(amount, isAbstract) {
+  const rounded = Math.round(amount);
+  if (isAbstract) {
+    return rounded.toLocaleString(CONFIG.locale) + ' pts';
+  }
+  return '$' + rounded.toLocaleString(CONFIG.locale);
 }
 
 function totalRounds() {
@@ -69,7 +73,7 @@ function showScreen(id) {
 }
 
 /* ============================================================================
-   DINÁMICA INDIVIDUAL
+   DINÁMICA INDIVIDUAL (PSICOMÉTRICA / ABSTRACTA)
    ============================================================================ */
 
 let ind = null;
@@ -79,9 +83,10 @@ function indCreateCases() {
   return CONFIG.values.map((_, i) => ({ id: i + 1, value: values[i], opened: false, isPlayer: false }));
 }
 
-function indStart(name) {
+function indStart(name, isAbstract) {
   ind = {
-    name: name || 'Sin nombre',
+    name: name || 'Evaluado/a sin nombre',
+    isAbstract: !!isAbstract,
     cases: indCreateCases(),
     playerCaseId: null,
     phase: 'pick',
@@ -128,9 +133,9 @@ function indShowOffer() {
   const offer = bankOfferOf(vals);
   const pending = vals.length - 1;
 
-  $('ind-offer-amount').innerText = formatMoney(offer);$('ind-offer-sub').innerText =
-    `Valor esperado: ${formatMoney(ve)} · Oferta = ${Math.round((offer / ve) * 100)}% del VE · ` +
-    (pending > 0 ? `Si rechazás, seguís con ${pending} maletín${pending === 1 ? '' : 'es'}.` : 'Última oportunidad antes del cambio final.');
+  $('ind-offer-amount').innerText = formatValue(offer, ind.isAbstract);$('ind-offer-sub').innerText =
+    `Valor Esperado: ${formatValue(ve, ind.isAbstract)} · Oferta = ${Math.round((offer / ve) * 100)}% del VE · ` +
+    (pending > 0 ? `Si rechaza, continúa con ${pending} posición${pending === 1 ? '' : 'es'}.` : 'Última oportunidad antes del dilema final.');
 
   ind.offerShownAt = performance.now();
   $('ind-offer-overlay').hidden = false;
@@ -171,8 +176,8 @@ function indStartFinalPhase() {
   ind.phase = 'swap';
   const mine = indPlayerCase();
   $('ind-swap-sub').innerText =
-    `Quedan dos maletines: el tuyo (Nº ${mine.id}) y el Nº ${other.id}. ` +
-    `Los premios vivos son ${formatMoney(Math.min(mine.value, other.value))} y ${formatMoney(Math.max(mine.value, other.value))}. ¿Cambiás?`;
+    `Dilema final: quedan dos posiciones (su posición N° ${mine.id} y la N° ${other.id}). ` +
+    `Los valores posibles son ${formatValue(Math.min(mine.value, other.value), ind.isAbstract)} y ${formatValue(Math.max(mine.value, other.value), ind.isAbstract)}. ¿Desea cambiar de posición?`;
   $('ind-swap-overlay').hidden = false;
   indRenderAll();
 }
@@ -192,8 +197,8 @@ function indResolveFinal(didSwap) {
 function indComputeRiskProfile(result) {
   if (result.type !== 'deal') {
     return {
-      tag: 'Buscador de riesgo',
-      detail: 'Llegaste hasta el final sin aceptar ofertas: mantuviste la incertidumbre completa hasta el último instante.'
+      tag: 'Buscador de riesgo / Maximizador',
+      detail: 'Mantuvo la posición hasta el término del ejercicio sin aceptar tratos intermedios. Alta tolerancia a la entropía y resistencia a la aversión a la pérdida.'
     };
   }
 
@@ -203,19 +208,19 @@ function indComputeRiskProfile(result) {
 
   if (ratio < 0.68) {
     return {
-      tag: 'Conservador',
-      detail: `Aceptaste cuando la oferta llegó al ${pct}% del valor esperado: preferiste asegurar una cifra cierta antes que arriesgar.`
+      tag: 'Conservador / Aversión a la pérdida',
+      detail: `Aceptó al alcanzar el ${pct}% del valor esperado. Evidenció preferencia por asegurar rendimiento cierto frente a la volatilidad.`
     };
   }
   if (ratio < 0.85) {
     return {
-      tag: 'Equilibrado',
-      detail: `Aceptaste cuando la oferta llegó al ${pct}% del valor esperado: lograste un balance entre prudencia y oportunidad.`
+      tag: 'Equilibrado / Racional Adaptativo',
+      detail: `Aceptó con una oferta del ${pct}% del valor esperado. Demostró balance adecuado entre costo de oportunidad y prudencia.`
     };
   }
   return {
-    tag: 'Buscador de riesgo',
-    detail: `Esperaste hasta que la oferta llegó al ${pct}% del valor esperado antes de aceptar: mostraste alta tolerancia a la volatilidad.`
+    tag: 'Buscador de riesgo / Alta Asunción',
+    detail: `Exigió hasta el ${pct}% del valor esperado antes de cerrar el trato. Tolerancia superior al riesgo y búsqueda activa de retornos.`
   };
 }
 
@@ -224,16 +229,16 @@ function indRenderProReport(ind, profile, totalMs, avgMs) {
   const last = history.length ? history[history.length - 1] : null;
   const ratio = (last && last.ve) ? (last.offer / last.ve) : 0;
 
-  const speedStyle = avgMs < 3000 ? "Procesamiento Intuitivo / Heurístico Rápido" : "Procesamiento Pausado / Analítico Reflexivo";
-  const outcomeText = ind.result.type === 'deal' ? `Aceptó oferta de ${formatMoney(ind.result.amount)}` : `Rechazó todas las ofertas (Llegó al final)`;
+  const speedStyle = avgMs < 3000 ? "Procesamiento Intuitivo / Heurístico Rápido (Sistema 1)" : "Procesamiento Analítico / Reflexivo (Sistema 2)";
+  const outcomeText = ind.result.type === 'deal' ? `Aceptó oferta de ${formatValue(ind.result.amount, ind.isAbstract)}` : `Rechazó todas las ofertas (Llegó al final)`;
 
   let qualitativeObs = '';
   if (ind.result.type !== 'deal') {
-    qualitativeObs = 'Demuestra una orientación marcada hacia la maximización del resultado bajo alta incertidumbre, priorizando el beneficio potencial sobre la seguridad del capital inmediato.';
+    qualitativeObs = 'Demuestra conducta orientada a la maximización bajo incertidumbre pura, priorizando el resultado potencial máximo sobre la seguridad inmediata.';
   } else if (ratio < 0.68) {
-    qualitativeObs = 'Muestra una aversión al riesgo pronunciada. Estuvo dispuesto a ceder más del 32% del valor esperado ponderado a cambio de eliminar la incertidumbre.';
+    qualitativeObs = 'Se observa aversión pronunciada a la pérdida (Prospect Theory). Priorizó la reducción de la incertidumbre cediendo parte sustancial del valor esperado.';
   } else {
-    qualitativeObs = 'Muestra una conducta negociadora equilibrada, evaluando racionalmente el costo de oportunidad y cerrando cuando el retorno marginal justificaba la certeza.';
+    qualitativeObs = 'Patrón de negociación adaptativo. Evaluó racionalmente el valor esperado y cerró cuando el retorno marginal justificaba la certeza.';
   }
 
   const tableRows = history.map(h => {
@@ -241,8 +246,8 @@ function indRenderProReport(ind, profile, totalMs, avgMs) {
     return `
       <tr style="border-bottom:1px solid rgba(148,163,184,0.1);">
         <td style="padding:6px;">Ronda ${h.round}</td>
-        <td style="padding:6px;">${formatMoney(h.ve)}</td>
-        <td style="padding:6px;">${formatMoney(h.offer)} (${rPct}%)</td>
+        <td style="padding:6px;">${formatValue(h.ve, ind.isAbstract)}</td>
+        <td style="padding:6px;">${formatValue(h.offer, ind.isAbstract)} (${rPct}%)</td>
         <td style="padding:6px; font-weight:bold;">${h.decision}</td>
         <td style="padding:6px;">${(h.latencyMs / 1000).toFixed(1)}s</td>
       </tr>
@@ -252,23 +257,24 @@ function indRenderProReport(ind, profile, totalMs, avgMs) {
   const html = `
     <div style="font-size:0.85rem; display:flex; flex-direction:column; gap:10px;">
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;">
-        <div><strong>Participante:</strong> ${ind.name || 'Sin especificar'}</div>
+        <div><strong>Evaluado/a:</strong> ${ind.name || 'Sin especificar'}</div>
         <div><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-ES')}</div>
-        <div><strong>Perfil de Riesgo:</strong> <span>${profile.tag}</span></div>
-        <div><strong>Estilo de Decisión:</strong> ${speedStyle}</div>
+        <div><strong>Modalidad:</strong> ${ind.isAbstract ? 'Psicométrica (Puntos Abstractos)' : 'Monetaria Clásica'}</div>
+        <div><strong>Perfil Taxonómico:</strong> <span>${profile.tag}</span></div>
+        <div style="grid-column: span 2;"><strong>Estilo Cognitivo Dominante:</strong> ${speedStyle}</div>
       </div>
 
       <div style="background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;">
-        <strong style="display:block; margin-bottom:4px;">Resumen Ejecutivo:</strong>
+        <strong style="display:block; margin-bottom:4px;">Síntesis Psicométrica y Conductual:</strong>
         <ul style="margin-left:18px; margin-bottom:0; line-height:1.4;">
-          <li><strong>Resultado Final:</strong> ${outcomeText}.</li>
-          <li><strong>Tiempo Total de Deliberación:</strong> ${(totalMs / 1000).toFixed(1)} segundos (Promedio de ${(avgMs / 1000).toFixed(1)}s por oferta).</li>
-          <li><strong>Observación Cualitativa:</strong> ${qualitativeObs}</li>
+          <li><strong>Resultado Final:</strong> ${outcomeText} (${formatValue(ind.result.amount, ind.isAbstract)}).</li>
+          <li><strong>Tiempo de Latencia Cognitiva:</strong> ${(totalMs / 1000).toFixed(1)}s acumulados (Promedio de ${(avgMs / 1000).toFixed(1)}s por oferta).</li>
+          <li><strong>Análisis Clínico / Conductual:</strong> ${qualitativeObs}</li>
         </ul>
       </div>
 
       <div style="margin-top:6px;">
-        <strong style="display:block; margin-bottom:6px;">Matriz Cuantitativa de Ofertas y Tiempos:</strong>
+        <strong style="display:block; margin-bottom:6px;">Matriz Cuantitativa de Ofertas, VE y Latencias:</strong>
         <table style="width:100%; border-collapse:collapse; text-align:left; font-size:0.8rem; background:rgba(0,0,0,0.2); border-radius:8px; overflow:hidden;">
           <thead>
             <tr style="background:rgba(148,163,184,0.1); font-family:Orbitron,sans-serif; font-size:0.68rem; text-transform:uppercase;">
@@ -276,7 +282,7 @@ function indRenderProReport(ind, profile, totalMs, avgMs) {
               <th style="padding:6px;">VE</th>
               <th style="padding:6px;">Oferta (% VE)</th>
               <th style="padding:6px;">Decisión</th>
-              <th style="padding:6px;">Tiempo</th>
+              <th style="padding:6px;">Latencia</th>
             </tr>
           </thead>
           <tbody>
@@ -321,7 +327,7 @@ function indRenderBoard() {
   const makeBadge = (val, cls) => {
     const b = document.createElement('div');
     b.className = `value-badge ${cls} ${revealed.includes(val) ? 'eliminated' : ''}`;
-    b.innerText = formatMoney(val);
+    b.innerText = formatValue(val, ind.isAbstract);
     return b;
   };
 
@@ -341,8 +347,8 @@ function indRenderBoard() {
     el.className = classes.join(' ');
     el.innerHTML = `
       <div class="num">${c.id}</div>
-      ${c.opened ? `<div class="val">${formatMoney(c.value)}</div>` : ''}
-      ${c.isPlayer && !c.opened ? '<div class="mine-tag">TUYO</div>' : ''}
+      ${c.opened ? `<div class="val">${formatValue(c.value, ind.isAbstract)}</div>` : ''}
+      ${c.isPlayer && !c.opened ? '<div class="mine-tag">PROPIA</div>' : ''}
     `;
     if (clickable && !c.opened && !c.isPlayer) {
       el.addEventListener('click', () => {
@@ -360,17 +366,18 @@ function indRenderMetrics() {
   $('ind-round-label').innerText = ind.phase === 'end'
     ? 'Fin'
     : ind.phase === 'pick' ? '-' : `${Math.min(ind.roundIndex + 1, totalRounds())} / ${totalRounds()}`;
-  $('ind-ve').innerText = vals.length ? formatMoney(expectedValueOf(vals)) : '$0';$('ind-offer').innerText = (vals.length && ind.phase !== 'pick') ? formatMoney(bankOfferOf(vals)) : '—';
+  $('ind-ve').innerText = vals.length ? formatValue(expectedValueOf(vals), ind.isAbstract) : formatValue(0, ind.isAbstract);
+  $('ind-offer').innerText = (vals.length && ind.phase !== 'pick') ? formatValue(bankOfferOf(vals), ind.isAbstract) : '—';
 }
 
 function indRenderStatus() {
   let text;
   switch (ind.phase) {
-    case 'pick': text = 'Elegí tu maletín: es el que te llevás si no aceptás ninguna oferta.'; break;
-    case 'open': text = `Ronda ${ind.roundIndex + 1}: abrí ${ind.opensLeft} maletín${ind.opensLeft === 1 ? '' : 'es'} más.`; break;
-    case 'offer': text = 'La banca hizo su oferta. ¿Trato o No Trato?'; break;
-    case 'swap': text = 'Dos maletines en juego: quedarse o cambiar.'; break;
-    case 'end': text = 'Prueba terminada.'; break;
+    case 'pick': text = 'Seleccione la posición base (maletín del evaluado).'; break;
+    case 'open': text = `Ronda ${ind.roundIndex + 1}: abra ${ind.opensLeft} posición${ind.opensLeft === 1 ? '' : 'es'} más.`; break;
+    case 'offer': text = 'La banca emitió oferta. ¿Aceptar (Trato) o Rechazar (No Trato)?'; break;
+    case 'swap': text = 'Dilema final: conservar o cambiar de posición.'; break;
+    case 'end': text = 'Evaluación finalizada.'; break;
     default: text = '';
   }
   $('ind-status').innerText = text;
@@ -382,8 +389,8 @@ function indRenderPlayerBar() {
   bar.hidden = false;
   $('ind-player-num').innerText = 'Nº ' + ind.playerCaseId;
   $('ind-player-hint').innerText = ind.phase === 'end'
-    ? `contenía ${formatMoney(indPlayerCase().value)}`
-    : 'queda cerrado hasta el final';
+    ? `contenía ${formatValue(indPlayerCase().value, ind.isAbstract)}`
+    : 'posición bloqueada';
 }
 
 function indRenderResult() {
@@ -391,20 +398,20 @@ function indRenderResult() {
   let title, sub;
 
   if (r.type === 'deal') {
-    title = 'Cerraste trato con la banca';
+    title = 'Trato cerrado con la banca';
     const diff = r.playerValue - r.amount;
-    sub = `Tu maletín (Nº ${ind.playerCaseId}) tenía ${formatMoney(r.playerValue)}. ` +
-      (diff > 0 ? `Dejaste ${formatMoney(diff)} sobre la mesa.` : `Le ganaste ${formatMoney(Math.abs(diff))} a la banca.`);
+    sub = `La posición original (Nº ${ind.playerCaseId}) contenía ${formatValue(r.playerValue, ind.isAbstract)}. ` +
+      (diff > 0 ? `Diferencia frente al potencial: ${formatValue(diff, ind.isAbstract)} sobre la mesa.` : `Superó la expectativa de la banca en ${formatValue(Math.abs(diff), ind.isAbstract)}.`);
   } else if (r.type === 'keep') {
-    title = 'Te quedaste con tu maletín';
-    sub = r.otherValue != null ? `El otro maletín tenía ${formatMoney(r.otherValue)}.` : 'Llegaste al final sin aceptar ninguna oferta.';
+    title = 'Conservó su posición original';
+    sub = r.otherValue != null ? `La posición restante contenía ${formatValue(r.otherValue, ind.isAbstract)}.` : 'Llegó al final sin aceptar tratos.';
   } else {
-    title = 'Cambiaste de maletín';
-    sub = `Tu maletín original (Nº ${ind.playerCaseId}) tenía ${formatMoney(r.playerValue)}.`;
+    title = 'Decidió cambiar de posición';
+    sub = `Su posición original (Nº ${ind.playerCaseId}) contenía ${formatValue(r.playerValue, ind.isAbstract)}.`;
   }
 
   $('ind-result-title').innerText = `${title} — ${ind.name}`;
-  $('ind-result-amount').innerText = formatMoney(r.amount);$('ind-result-sub').innerText = sub;
+  $('ind-result-amount').innerText = formatValue(r.amount, ind.isAbstract);$('ind-result-sub').innerText = sub;
 
   const profile = indComputeRiskProfile(r);
   $('ind-risk-tag').innerText = profile.tag;
@@ -414,19 +421,19 @@ function indRenderResult() {
   const avgMs = ind.history.length ? Math.round(totalMs / ind.history.length) : 0;
 
   $('ind-result-history').innerHTML =
-    `<h3>Decisiones tomadas</h3>` +
+    `<h3>Historial de decisiones y latencias</h3>` +
     ind.history.map(h => `
       <div class="hist-row">
         <span>Ronda ${h.round}</span>
-        <span>VE ${formatMoney(h.ve)}</span>
-        <span class="hist-offer">${formatMoney(h.offer)}</span>
+        <span>VE ${formatValue(h.ve, ind.isAbstract)}</span>
+        <span class="hist-offer">${formatValue(h.offer, ind.isAbstract)}</span>
         <span class="hist-dec ${h.decision === 'Trato' ? 'deal' : 'nodeal'}">${h.decision}</span>
       </div>`).join('');
 
   indRenderProReport(ind, profile, totalMs, avgMs);
 
   $('ind-pro-report').hidden = true;
-  $('ind-toggle-pro-btn').innerText = '👁️ Ver Informe Profesional';
+  $('ind-toggle-pro-btn').innerText = '👁️ Ver Informe Psicométrico';
 }
 
 function hideIndOverlays() {
@@ -487,8 +494,9 @@ function grpCreateCases() {
   return CONFIG.values.map((_, i) => ({ id: i + 1, value: values[i], opened: false, isPlayer: false }));
 }
 
-function grpStart() {
+function grpStart(isAbstract) {
   grp = {
+    isAbstract: !!isAbstract,
     cases: grpCreateCases(),
     playerCaseId: null,
     phase: 'pick',
@@ -535,16 +543,16 @@ function grpShowOffer() {
   const offer = bankOfferOf(vals);
   const pending = vals.length - 1;
 
-  $('grp-offer-amount').innerText = formatMoney(offer);$('grp-offer-sub').innerText =
-    `Valor esperado: ${formatMoney(ve)} · Oferta = ${Math.round((offer / ve) * 100)}% del VE · ` +
-    (pending > 0 ? `Si rechazan, siguen con ${pending} maletín${pending === 1 ? '' : 'es'}.` : 'Última oportunidad antes del cambio final.');
+  $('grp-offer-amount').innerText = formatValue(offer, grp.isAbstract);$('grp-offer-sub').innerText =
+    `Valor esperado: ${formatValue(ve, grp.isAbstract)} · Oferta = ${Math.round((offer / ve) * 100)}% del VE · ` +
+    (pending > 0 ? `Si rechazan, continúan con ${pending} posición${pending === 1 ? '' : 'es'}.` : 'Última oportunidad antes del dilema final.');
 
   $('grp-driver-select').value = '';$('grp-offer-overlay').hidden = false;
   grpRenderStatus();
-  grpStartTimer(offer, ve);
+  grpStartTimer();
 }
 
-function grpStartTimer(offer, ve) {
+function grpStartTimer() {
   clearInterval(grpTimerHandle);
   let secondsLeft = GROUP_ROUND_SECONDS;
   const ring = $('grp-countdown');
@@ -597,8 +605,8 @@ function grpStartFinalPhase() {
   grp.phase = 'swap';
   const mine = grpPlayerCase();
   $('grp-swap-sub').innerText =
-    `Quedan dos maletines: el suyo (Nº ${mine.id}) y el Nº ${other.id}. ` +
-    `Los premios vivos son ${formatMoney(Math.min(mine.value, other.value))} y ${formatMoney(Math.max(mine.value, other.value))}. ¿Cambian?`;
+    `Quedan dos posiciones: la del grupo (Nº ${mine.id}) y la Nº ${other.id}. ` +
+    `Los valores vivos son ${formatValue(Math.min(mine.value, other.value), grp.isAbstract)} y ${formatValue(Math.max(mine.value, other.value), grp.isAbstract)}. ¿Deciden cambiar?`;
   $('grp-swap-driver-select').value = '';$('grp-swap-overlay').hidden = false;
   grpRenderAll();
 }
@@ -636,34 +644,34 @@ function grpRenderProReport(grp) {
   if (tally.length) {
     leadersHtml = tally.map(([name, count]) => {
       const pct = Math.round((count / totalDecisions) * 100);
-      return `<li><strong>${name}:</strong> Impulsó ${count} decisión(es) (${pct}% de influencia en el grupo).</li>`;
+      return `<li><strong>${name}:</strong> Impulsó ${count} decisión(es) (${pct}% de influencia en el liderazgo grupal).</li>`;
     }).join('');
   } else {
-    leadersHtml = '<li>No se asignaron líderes o impulsores explícitos durante la dinámica.</li>';
+    leadersHtml = '<li>No se asignaron impulsores explícitos durante la dinámica.</li>';
   }
 
   const autoDecisions = history.filter(h => h.auto).length;
   const timeObs = autoDecisions > 0
-    ? `El grupo tuvo ${autoDecisions} decisión(es) forzada(s) por agotamiento del tiempo de 45s, indicando dificultad para alcanzar consenso bajo presión.`
-    : 'El grupo gestionó eficazmente el tiempo disponible (45s por ronda), logrando consensos dentro del límite estipulado.';
+    ? `El grupo experimentó ${autoDecisions} decisión(es) forzada(s) por expiración del tiempo límite (45s), evidenciando fricción o bloqueo en el consenso.`
+    : 'El grupo gestionó fluidamente el límite de tiempo (45s), alcanzando acuerdos de manera sincronizada.';
 
   const tableRows = history.map(h => `
     <tr style="border-bottom:1px solid rgba(148,163,184,0.1);">
       <td style="padding:6px;">${h.isFinal ? 'Final' : 'Ronda ' + h.round}</td>
-      <td style="padding:6px;">${h.ve ? formatMoney(h.ve) : '—'}</td>
-      <td style="padding:6px;">${h.offer ? formatMoney(h.offer) : '—'}</td>
+      <td style="padding:6px;">${h.ve ? formatValue(h.ve, grp.isAbstract) : '—'}</td>
+      <td style="padding:6px;">${h.offer ? formatValue(h.offer, grp.isAbstract) : '—'}</td>
       <td style="padding:6px; font-weight:bold;">${h.decision}${h.auto ? ' (Tiempo agotado)' : ''}</td>
-      <td style="padding:6px;">${h.driver || 'Consenso no registrado'}</td>
+      <td style="padding:6px;">${h.driver || 'Consenso tácito'}</td>
     </tr>
   `).join('');
 
   const html = `
     <div style="font-size:0.85rem; display:flex; flex-direction:column; gap:10px;">
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;">
-        <div><strong>Modalidad:</strong> Consenso Grupal Cronometrado</div>
+        <div><strong>Modalidad Grupal:</strong> Consenso Cronometrado</div>
         <div><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-ES')}</div>
-        <div><strong>Participantes Registrados:</strong> ${grpParticipants.length || 'Sin lista previa'}</div>
-        <div><strong>Resultado Final:</strong> ${formatMoney(grp.result.amount)}</div>
+        <div><strong>Participantes:</strong> ${grpParticipants.length || 'No especificados'}</div>
+        <div><strong>Resultado:</strong> ${formatValue(grp.result.amount, grp.isAbstract)}</div>
       </div>
 
       <div style="background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;">
@@ -671,12 +679,12 @@ function grpRenderProReport(grp) {
         <ul style="margin-left:18px; margin-bottom:6px; line-height:1.4;">
           ${leadersHtml}
         </ul>
-        <strong style="display:block; margin-top:8px; margin-bottom:4px;">Gestión del Tiempo y Presión:</strong>
+        <strong style="display:block; margin-top:8px; margin-bottom:4px;">Gestión de la Presión Temporal:</strong>
         <p style="margin:0; line-height:1.4;">${timeObs}</p>
       </div>
 
       <div style="margin-top:6px;">
-        <strong style="display:block; margin-bottom:6px;">Matriz de Decisiones e Impulsores:</strong>
+        <strong style="display:block; margin-bottom:6px;">Matriz Grupal de Decisiones y Liderazgo:</strong>
         <table style="width:100%; border-collapse:collapse; text-align:left; font-size:0.8rem; background:rgba(0,0,0,0.2); border-radius:8px; overflow:hidden;">
           <thead>
             <tr style="background:rgba(148,163,184,0.1); font-family:Orbitron,sans-serif; font-size:0.68rem; text-transform:uppercase;">
@@ -729,7 +737,7 @@ function grpRenderBoard() {
   const makeBadge = (val, cls) => {
     const b = document.createElement('div');
     b.className = `value-badge ${cls} ${revealed.includes(val) ? 'eliminated' : ''}`;
-    b.innerText = formatMoney(val);
+    b.innerText = formatValue(val, grp.isAbstract);
     return b;
   };
 
@@ -749,7 +757,7 @@ function grpRenderBoard() {
     el.className = classes.join(' ');
     el.innerHTML = `
       <div class="num">${c.id}</div>
-      ${c.opened ? `<div class="val">${formatMoney(c.value)}</div>` : ''}
+      ${c.opened ? `<div class="val">${formatValue(c.value, grp.isAbstract)}</div>` : ''}
       ${c.isPlayer && !c.opened ? '<div class="mine-tag">GRUPO</div>' : ''}
     `;
     if (clickable && !c.opened && !c.isPlayer) {
@@ -768,17 +776,18 @@ function grpRenderMetrics() {
   $('grp-round-label').innerText = grp.phase === 'end'
     ? 'Fin'
     : grp.phase === 'pick' ? '-' : `${Math.min(grp.roundIndex + 1, totalRounds())} / ${totalRounds()}`;
-  $('grp-ve').innerText = vals.length ? formatMoney(expectedValueOf(vals)) : '$0';$('grp-offer').innerText = (vals.length && grp.phase !== 'pick') ? formatMoney(bankOfferOf(vals)) : '—';
+  $('grp-ve').innerText = vals.length ? formatValue(expectedValueOf(vals), grp.isAbstract) : formatValue(0, grp.isAbstract);
+  $('grp-offer').innerText = (vals.length && grp.phase !== 'pick') ? formatValue(bankOfferOf(vals), grp.isAbstract) : '—';
 }
 
 function grpRenderStatus() {
   let text;
   switch (grp.phase) {
-    case 'pick': text = 'Elijan el maletín del grupo.'; break;
-    case 'open': text = `Ronda ${grp.roundIndex + 1}: abran ${grp.opensLeft} maletín${grp.opensLeft === 1 ? '' : 'es'} más.`; break;
-    case 'offer': text = 'La banca ofrece. Discutan y decidan antes de que termine el tiempo.'; break;
-    case 'swap': text = 'Dos maletines en juego: quedarse o cambiar.'; break;
-    case 'end': text = 'Dinámica terminada.'; break;
+    case 'pick': text = 'Elijan la posición del grupo.'; break;
+    case 'open': text = `Ronda ${grp.roundIndex + 1}: abran ${grp.opensLeft} posición${grp.opensLeft === 1 ? '' : 'es'} más.`; break;
+    case 'offer': text = 'La banca ofrece. Discutan y decidan antes de que concluya el tiempo.'; break;
+    case 'swap': text = 'Dos posiciones en juego: mantener o cambiar.'; break;
+    case 'end': text = 'Dinámica finalizada.'; break;
     default: text = '';
   }
   $('grp-status').innerText = text;
@@ -790,8 +799,8 @@ function grpRenderPlayerBar() {
   bar.hidden = false;
   $('grp-player-num').innerText = 'Nº ' + grp.playerCaseId;
   $('grp-player-hint').innerText = grp.phase === 'end'
-    ? `contenía ${formatMoney(grpPlayerCase().value)}`
-    : 'queda cerrado hasta el final';
+    ? `contenía ${formatValue(grpPlayerCase().value, grp.isAbstract)}`
+    : 'posición bloqueada';
 }
 
 function grpParticipationTally() {
@@ -809,26 +818,26 @@ function grpRenderResult() {
   if (r.type === 'deal') {
     title = 'El grupo cerró trato con la banca';
     const diff = r.playerValue - r.amount;
-    sub = `El maletín del grupo (Nº ${grp.playerCaseId}) tenía ${formatMoney(r.playerValue)}. ` +
-      (diff > 0 ? `Dejaron ${formatMoney(diff)} sobre la mesa.` : `Le ganaron ${formatMoney(Math.abs(diff))} a la banca.`);
+    sub = `La posición del grupo (Nº ${grp.playerCaseId}) contenía ${formatValue(r.playerValue, grp.isAbstract)}. ` +
+      (diff > 0 ? `Diferencia sobre la mesa: ${formatValue(diff, grp.isAbstract)}.` : `Superaron la oferta de la banca.`);
   } else if (r.type === 'keep') {
-    title = 'El grupo se quedó con su maletín';
-    sub = r.otherValue != null ? `El otro maletín tenía ${formatMoney(r.otherValue)}.` : 'Llegaron al final sin aceptar ninguna oferta.';
+    title = 'El grupo conservó su posición';
+    sub = r.otherValue != null ? `La otra posición contenía ${formatValue(r.otherValue, grp.isAbstract)}.` : 'Llegaron al final sin aceptar tratos.';
   } else {
-    title = 'El grupo cambió de maletín';
-    sub = `El maletín original (Nº ${grp.playerCaseId}) tenía ${formatMoney(r.playerValue)}.`;
+    title = 'El grupo cambió de posición';
+    sub = `La posición original (Nº ${grp.playerCaseId}) contenía ${formatValue(r.playerValue, grp.isAbstract)}.`;
   }
 
   $('grp-result-title').innerText = title;
-  $('grp-result-amount').innerText = formatMoney(r.amount);$('grp-result-sub').innerText = sub;
+  $('grp-result-amount').innerText = formatValue(r.amount, grp.isAbstract);$('grp-result-sub').innerText = sub;
 
   const tally = grpParticipationTally();
   const partBox = $('grp-participation-list');
   if (!tally.length) {
-    partBox.innerHTML = '<p class="empty-note">No se registraron participantes en las decisiones.</p>';
+    partBox.innerHTML = '<p class="empty-note">No se registraron impulsores en las decisiones.</p>';
   } else {
     const max = tally[0][1];
-    partBox.innerHTML = '<h3 style="font-family:Orbitron,sans-serif;font-size:0.72rem;letter-spacing:1px;text-transform:uppercase;color:#64748b;margin-bottom:10px;">Participación en las decisiones</h3>' +
+    partBox.innerHTML = '<h3 style="font-family:Orbitron,sans-serif;font-size:0.72rem;letter-spacing:1px;text-transform:uppercase;color:#64748b;margin-bottom:10px;">Influencia y liderazgo en decisiones</h3>' +
       tally.map(([name, count]) => `
         <div class="participation-row">
           <span>${name}</span>
@@ -838,18 +847,18 @@ function grpRenderResult() {
   }
 
   $('grp-result-history').innerHTML =
-    '<h3>Historial de decisiones</h3>' +
+    '<h3>Historial de decisiones grupales</h3>' +
     grp.history.map(h => `
       <div class="hist-row">
         <span>${h.isFinal ? 'Final' : 'Ronda ' + h.round}</span>
-        <span class="hist-offer">${h.offer ? formatMoney(h.offer) : '—'}</span>
+        <span class="hist-offer">${h.offer ? formatValue(h.offer, grp.isAbstract) : '—'}</span>
         <span class="hist-dec ${h.auto ? 'auto' : (h.decision === 'Trato' ? 'deal' : 'nodeal')}">${h.decision}${h.auto ? ' (auto)' : ''}</span>
         <span>${h.driver || '—'}</span>
       </div>`).join('');
 
   grpRenderProReport(grp);
   $('grp-pro-report').hidden = true;
-  $('grp-toggle-pro-btn').innerText = '👁️ Ver Informe Profesional';
+  $('grp-toggle-pro-btn').innerText = '👁️ Ver Informe Psicométrico Grupal';
 }
 
 function hideGrpOverlays() {
@@ -876,7 +885,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Individual
-  $('ind-start-btn').addEventListener('click', () => indStart($('ind-name-input').value));
+  $('ind-start-btn').addEventListener('click', () => {
+    const name = $('ind-name-input').value;
+    const isAbstract = $('ind-abstract-mode').checked;
+    indStart(name, isAbstract);
+  });
   $('ind-deal-btn').addEventListener('click', () => indDecide('Trato'));$('ind-nodeal-btn').addEventListener('click', () => indDecide('No Trato'));
   $('ind-keep-btn').addEventListener('click', () => indResolveFinal(false));$('ind-swap-btn').addEventListener('click', () => indResolveFinal(true));
 
@@ -884,7 +897,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const reportBox = $('ind-pro-report');
     const isHidden = reportBox.hidden;
     reportBox.hidden = !isHidden;
-    $('ind-toggle-pro-btn').innerText = isHidden ? '🙈 Ocultar Informe Profesional' : '👁️ Ver Informe Profesional';
+    $('ind-toggle-pro-btn').innerText = isHidden ? '🙈 Ocultar Informe Psicométrico' : '👁️ Ver Informe Psicométrico';
   });
 
   $('ind-print-pro-btn').addEventListener('click', () => {
@@ -900,8 +913,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   $('ind-reset-btn').addEventListener('click', () => {
-    if (ind && ind.history.length && !window.confirm('Esto reinicia la prueba actual. ¿Continuar?')) return;
-    indStart(ind ? ind.name : '');
+    if (ind && ind.history.length && !window.confirm('Esto reinicia la evaluación actual. ¿Continuar?')) return;
+    indStart(ind ? ind.name : '', ind ? ind.isAbstract : true);
   });
 
   // Grupal
@@ -911,9 +924,13 @@ document.addEventListener('DOMContentLoaded', () => {
     input.value = '';
     input.focus();
   });
-  $('grp-name-input').addEventListener('keydown', (e) => {     if (e.key === 'Enter') { e.preventDefault();$('grp-add-btn').click(); }
+  $('grp-name-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); $('grp-add-btn').click(); }
   });
-  $('grp-start-btn').addEventListener('click', grpStart);
+  $('grp-start-btn').addEventListener('click', () => {
+    const isAbstract = $('grp-abstract-mode').checked;
+    grpStart(isAbstract);
+  });
   $('grp-deal-btn').addEventListener('click', () => grpDecide('Trato', false));$('grp-nodeal-btn').addEventListener('click', () => grpDecide('No Trato', false));
   $('grp-keep-btn').addEventListener('click', () => grpResolveFinal(false));$('grp-swap-btn').addEventListener('click', () => grpResolveFinal(true));
 
@@ -921,7 +938,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const reportBox = $('grp-pro-report');
     const isHidden = reportBox.hidden;
     reportBox.hidden = !isHidden;
-    $('grp-toggle-pro-btn').innerText = isHidden ? '🙈 Ocultar Informe Profesional' : '👁️ Ver Informe Profesional';
+    $('grp-toggle-pro-btn').innerText = isHidden ? '🙈 Ocultar Informe Grupal' : '👁️ Ver Informe Psicométrico Grupal';
   });
 
   $('grp-print-pro-btn').addEventListener('click', () => {
@@ -937,7 +954,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $('grp-reset-btn').addEventListener('click', () => {
     if (grp && grp.history.length && !window.confirm('Esto reinicia la dinámica actual. ¿Continuar?')) return;
-    grpStart();
+    grpStart(grp ? grp.isAbstract : true);
   });
 
   renderGrpParticipantEditor();
